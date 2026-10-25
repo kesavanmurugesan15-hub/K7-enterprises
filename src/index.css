@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-page text-ink-primary font-sans text-sm antialiased;
+    background-color: #F5F6F8;
+    color: #20242B;
+  }
+
+  /* Custom enterprise thin scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #F1F3F5;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #CFD4DC;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #98A2B3;
+  }
+}
+
+@layer utilities {
+  .text-num {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+}

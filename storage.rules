@@ -1,0 +1,39 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOperations() {
+      return isAuthenticated() && (
+        request.auth.token.role in ['admin', 'distributor']
+      );
+    }
+
+    // Product Images catalogue
+    match /products/{allPaths=**} {
+      allow read: if true;
+      allow write: if isOperations()
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+
+    // Business Assets (Logo, Branding)
+    match /branding/{allPaths=**} {
+      allow read: if true;
+      allow write: if isOperations()
+                   && request.resource.size < 2 * 1024 * 1024
+                   && request.resource.contentType.matches('image/(jpeg|png|webp|svg\\+xml)');
+    }
+
+    // Delivery drop-off proof / Receipts
+    match /delivery_proofs/{orderId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated()
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+  }
+}

@@ -1,0 +1,159 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for Role-Based Access Control (RBAC)
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'admin' ||
+        getUserData().role == 'admin'
+      );
+    }
+
+    function isOperations() {
+      return isAuthenticated() && (
+        request.auth.token.role in ['admin', 'distributor'] ||
+        getUserData().role in ['admin', 'distributor']
+      );
+    }
+
+    function isSalesRep() {
+      return isAuthenticated() && (
+        request.auth.token.role in ['admin', 'distributor', 'sales_rep'] ||
+        getUserData().role in ['admin', 'distributor', 'sales_rep']
+      );
+    }
+
+    function isRetailer(retailerId) {
+      return isAuthenticated() && (
+        getUserData().retailerId == retailerId ||
+        isAdmin() ||
+        isOperations()
+      );
+    }
+
+    // Business Master Settings
+    match /businessSettings/{bizId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // User Accounts & Roles
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      // Only Admin can assign or alter roles and permissions
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isActive', 'businessId']));
+    }
+
+    // Retailers Directory
+    match /retailers/{retailerId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isOperations();
+    }
+
+    // Suppliers (Aachi Depots)
+    match /suppliers/{supplierId} {
+      allow read: if isOperations();
+      allow write: if isOperations();
+    }
+
+    // Products & Pricing Catalogue
+    match /products/{productId} {
+      allow read: if isAuthenticated();
+      // Only Admin and Operations can modify products, prices, or batches
+      allow create, update, delete: if isAdmin() || isOperations();
+    }
+
+    // Sales Orders
+    match /salesOrders/{orderId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        isOperations() || 
+        getUserData().retailerId == resource.data.retailerId ||
+        getUserData().id == resource.data.salesRepId
+      );
+      // Retailer / Sales Rep can create orders; prices re-validated
+      allow create: if isAuthenticated();
+      // State changes require Operations or Admin
+      allow update: if isOperations() || (
+        getUserData().retailerId == resource.data.retailerId && 
+        resource.data.currentStage == 'ORDER_PLACED' && 
+        request.resource.data.currentStage == 'CANCELLED'
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Sales Invoices
+    match /invoices/{invoiceId} {
+      allow read: if isAuthenticated();
+      allow write: if isOperations();
+    }
+
+    // Purchases & GRN
+    match /purchaseOrders/{poId} {
+      allow read, write: if isOperations();
+    }
+    match /goodsReceipts/{grnId} {
+      allow read, write: if isOperations();
+    }
+
+    // Auditable Inventory Movements (Immutable ledger)
+    match /inventoryMovements/{movId} {
+      allow read: if isOperations();
+      // Append-only ledger; cannot update or delete movements
+      allow create: if isOperations();
+      allow update, delete: if false;
+    }
+
+    // Accounting: Chart of Accounts & Vouchers
+    match /accounts/{accId} {
+      allow read: if isOperations();
+      allow write: if isAdmin();
+    }
+    match /journalEntries/{entryId} {
+      allow read: if isOperations();
+      // Double-entry entries can only be appended by authorized accounting operations
+      allow create: if isOperations();
+      // Posted transactions cannot be deleted; must post reversal
+      allow update, delete: if false;
+    }
+
+    // Bank Reconciliation
+    match /bankAccounts/{bankId} {
+      allow read, write: if isOperations();
+    }
+    match /bankStatements/{stmtId} {
+      allow read, write: if isOperations();
+    }
+
+    // Collections & Expenses
+    match /paymentRecords/{recId} {
+      allow read, write: if isOperations();
+    }
+    match /expenseRecords/{expId} {
+      allow read, write: if isOperations();
+    }
+
+    // Notifications & Audit Logs
+    match /notifications/{notifId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      // Append-only audit trail
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+  }
+}
