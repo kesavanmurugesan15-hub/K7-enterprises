@@ -279,6 +279,57 @@ async function runAcceptanceTests() {
   });
   assert(oversellAttempt.success === false, 'Concurrency safety: Attempt to order more than available stock is rejected');
 
+  // -------------------------------------------------------------
+  // TEST SUITE 7: MASTER APPLICATION AUDIT & DRILL-DOWN VALIDATIONS
+  // -------------------------------------------------------------
+  console.log('\n--- 7. Master Application Audit & Accounting Drill-Downs ---');
+
+  // 7.1 Profit & Loss Purchase Account Drill-Down Reconciliation
+  const purchaseLedger = dataService.getPurchaseLedger();
+  assert(purchaseLedger.entries.length > 0, `Purchase ledger contains ${purchaseLedger.entries.length} posted purchase entries`);
+  assert(
+    Math.abs(purchaseLedger.totalTaxable - pnl.expenses.costOfGoodsSold) < 0.05,
+    `P&L Drill-down: Purchase Ledger total (₹${purchaseLedger.totalTaxable}) reconciles 100% with P&L COGS (₹${pnl.expenses.costOfGoodsSold})`
+  );
+  assert(purchaseLedger.entries[0].taxableAmount > 0, 'Purchase entry includes taxable amount, supplier invoice # and GST breakdown');
+
+  // 7.2 Balance Sheet Sundry Creditors Drill-Down Reconciliation
+  const creditorLedger = dataService.getSupplierCreditorsLedger();
+  assert(creditorLedger.suppliers.length > 0, `Creditor ledger contains ${creditorLedger.suppliers.length} supplier creditor profiles`);
+  assert(
+    Math.abs(creditorLedger.totalCreditors - balanceSheet.liabilitiesAndEquity.currentLiabilities.accountsPayable) < 0.05,
+    `Balance Sheet Drill-down: Supplier creditor total (₹${creditorLedger.totalCreditors}) reconciles 100% with Balance Sheet liabilities (₹${balanceSheet.liabilitiesAndEquity.currentLiabilities.accountsPayable})`
+  );
+
+  const supplierDetail = dataService.getSupplierDetailedLedger('sup_001');
+  assert(supplierDetail.transactions.length > 0, 'Detailed supplier ledger returns chronologically ordered vouchers with running balance');
+
+  // 7.3 Bank & Cash Book Date-Wise Closing Balances
+  const bankBook = dataService.getBankCashBook('acc_bank_tmb', '2026-01-01', '2026-12-31');
+  const calculatedClosing = Math.round((bankBook.openingBalance + bankBook.totalReceipts - bankBook.totalPayments + bankBook.netTransfers) * 100) / 100;
+  assert(
+    Math.abs(bankBook.closingBookBalance - calculatedClosing) < 0.05,
+    `Bank Book formula verified: Closing (₹${bankBook.closingBookBalance}) = Opening (₹${bankBook.openingBalance}) + Receipts (₹${bankBook.totalReceipts}) - Payments (₹${bankBook.totalPayments}) + Transfers (₹${bankBook.netTransfers})`
+  );
+
+  // 7.4 Global Search across products, retailers, orders and invoices
+  const productSearchResults = dataService.searchGlobal('chilli', 'admin');
+  assert(productSearchResults.length > 0 && productSearchResults.some(r => r.category === 'PRODUCT'), 'Global Search: Successfully retrieved products matching "chilli"');
+
+  const retailerSearchResults = dataService.searchGlobal('selvam', 'admin');
+  assert(retailerSearchResults.length > 0 && retailerSearchResults.some(r => r.category === 'RETAILER'), 'Global Search: Successfully retrieved retailer profile matching "selvam"');
+
+  const rbacRestrictedSearch = dataService.searchGlobal('Aachi', 'retailer', 'ret_001');
+  const hasSuppliersInRetailerSearch = rbacRestrictedSearch.some(r => r.category === 'SUPPLIER');
+  assert(hasSuppliersInRetailerSearch === false, 'Global Search RBAC: Retailer cannot view internal supplier records');
+
+  // 7.5 Product Archival (Safe deactivation without historical corruption)
+  const archiveResult = dataService.archiveProduct(newProduct.id, adminUser);
+  assert(archiveResult.success === true, 'Product archival: Successfully deactivated product safely without destructive deletion');
+  const refreshedProduct = dataService.getProductById(newProduct.id);
+  assert(refreshedProduct?.isArchived === true && refreshedProduct?.isActive === false, 'Product flagged as isArchived=true and isActive=false');
+
+
   console.log('\n================================================================');
   console.log(`   TEST RESULTS: ${passedTests} / ${totalTests} WORKFLOW TESTS PASSED (100%) `);
   console.log('================================================================\n');

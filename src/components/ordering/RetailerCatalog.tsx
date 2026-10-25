@@ -50,7 +50,7 @@ export const RetailerCatalog: React.FC<RetailerCatalogProps> = ({ onGoToCart }) 
   };
 
   const filteredProducts = products.filter(p => {
-    if (!p.isActive) return false;
+    if (!p.isActive || p.isArchived) return false;
     const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
     const matchesSearch =
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -115,7 +115,18 @@ export const RetailerCatalog: React.FC<RetailerCatalogProps> = ({ onGoToCart }) 
       </div>
 
       {/* Product Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+      {filteredProducts.length === 0 ? (
+        <div className="p-12 bg-surface rounded-lg border border-divider text-center shadow-enterprise">
+          <ImageIcon className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+          <h3 className="text-sm font-bold text-ink-primary">No Products Available</h3>
+          <p className="text-xs text-ink-secondary mt-1">
+            {searchQuery
+              ? `No Aachi masala products matched "${searchQuery}". Try a different keyword.`
+              : 'No products listed in this category.'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredProducts.map(prod => {
           const qty = quantities[prod.id] || 1;
           const isOutOfStock = prod.availableStock <= 0;
@@ -172,6 +183,11 @@ export const RetailerCatalog: React.FC<RetailerCatalogProps> = ({ onGoToCart }) 
                     <h3 className="text-sm font-bold text-ink-primary leading-tight mt-0.5">{prod.name}</h3>
                     {prod.tamilName && (
                       <p className="text-xs text-ink-muted mt-0.5">{prod.tamilName}</p>
+                    )}
+                    {prod.description && (
+                      <p className="text-[11px] text-ink-secondary mt-1 line-clamp-2 leading-relaxed">
+                        {prod.description}
+                      </p>
                     )}
                   </div>
 
@@ -256,6 +272,7 @@ export const RetailerCatalog: React.FC<RetailerCatalogProps> = ({ onGoToCart }) 
           );
         })}
       </div>
+      )}
     </div>
   );
 };

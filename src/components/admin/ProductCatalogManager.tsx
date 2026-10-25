@@ -6,7 +6,7 @@ import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
 import { Badge } from '../common/Badge';
 import { formatINR } from '../../utils/currency';
-import { Plus, Upload, Image as ImageIcon, Search, Tag, AlertCircle, Trash2, Edit2, CheckCircle2 } from 'lucide-react';
+import { Plus, Upload, Image as ImageIcon, Search, Tag, AlertCircle, Trash2, Edit2, CheckCircle2, Archive } from 'lucide-react';
 
 export const ProductCatalogManager: React.FC = () => {
   const { currentUser } = useAuth();
@@ -58,7 +58,9 @@ export const ProductCatalogManager: React.FC = () => {
       stockOnHand: 100,
       stockReserved: 0,
       availableStock: 100,
+      description: '',
       isActive: true,
+      isArchived: false,
       batches: []
     });
     setImagePreview('');
@@ -141,7 +143,9 @@ export const ProductCatalogManager: React.FC = () => {
       stockReserved: Number(editingProduct.stockReserved || 0),
       availableStock: Math.max(0, available),
       imageUrl: imagePreview || editingProduct.imageUrl || '',
+      description: editingProduct.description || '',
       isActive: editingProduct.isActive ?? true,
+      isArchived: editingProduct.isArchived ?? false,
       batches: editingProduct.batches || [],
       createdAt: editingProduct.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -149,6 +153,13 @@ export const ProductCatalogManager: React.FC = () => {
 
     dataService.saveProduct(productToSave, currentUser);
     setIsModalOpen(false);
+  };
+
+  const handleArchiveProduct = (prod: Product) => {
+    if (confirm(`Are you sure you want to archive product "${prod.name}" (${prod.sku})? This deactivates it safely without corrupting historical orders or accounting records.`)) {
+      const res = dataService.archiveProduct(prod.id, currentUser);
+      if (!res.success) alert(res.message);
+    }
   };
 
   const filteredProducts = products.filter(p => {
@@ -284,14 +295,28 @@ export const ProductCatalogManager: React.FC = () => {
                     )}
                   </td>
                   <td className="py-3 px-4 text-right">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEditModal(prod)}
-                      className="text-brand hover:underline font-semibold flex items-center justify-end gap-1 ml-auto"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                      <span>Edit</span>
-                    </button>
+                    <div className="flex items-center justify-end gap-2 ml-auto">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditModal(prod)}
+                        className="text-brand hover:underline font-semibold flex items-center gap-1"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                        <span>Edit</span>
+                      </button>
+                      {!prod.isArchived ? (
+                        <button
+                          type="button"
+                          onClick={() => handleArchiveProduct(prod)}
+                          className="p-1 hover:bg-slate-200 rounded text-ink-muted hover:text-rose-600 transition-colors"
+                          title="Archive Product"
+                        >
+                          <Archive className="w-3.5 h-3.5" />
+                        </button>
+                      ) : (
+                        <Badge variant="brand">Archived</Badge>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -374,6 +399,18 @@ export const ProductCatalogManager: React.FC = () => {
                 placeholder="e.g. ஆச்சி சிக்கன் மசாலா"
               />
             </div>
+          </div>
+
+          {/* Description & Packaging Notes */}
+          <div>
+            <label className="block font-semibold text-ink-primary mb-1">Product Description & Packaging Notes</label>
+            <textarea
+              rows={2}
+              value={editingProduct?.description || ''}
+              onChange={e => setEditingProduct({ ...editingProduct, description: e.target.value })}
+              className="w-full p-2 border border-divider rounded focus:border-brand focus:outline-none"
+              placeholder="e.g. Pure authentic ground red chilli powder with rich red colour and pungency. Official 3-layer laminated pack."
+            />
           </div>
 
           {/* SKU, Barcode, Category */}

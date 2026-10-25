@@ -1,6 +1,7 @@
 export interface Supplier {
   id: string;
   name: string; // e.g. "Aachi Spices & Foods Pvt Ltd - Chennai Hub / Madurai Depot"
+  supplierCode?: string;
   contactPerson: string;
   phone: string;
   email: string;
@@ -10,6 +11,7 @@ export interface Supplier {
   gstin: string;
   panNumber?: string;
   paymentTermsDays: number;
+  openingBalance?: number;
   currentOutstandingBalance: number;
   isActive: boolean;
   createdAt: string;

@@ -28,6 +28,7 @@ import { TrialBalanceView } from './components/accounting/TrialBalanceView';
 import { ProfitLossView } from './components/accounting/ProfitLossView';
 import { BalanceSheetView } from './components/accounting/BalanceSheetView';
 import { CustomerAgeingView } from './components/accounting/CustomerAgeingView';
+import { BankCashBookView } from './components/accounting/BankCashBookView';
 import { BankReconciliationView } from './components/bank/BankReconciliationView';
 import { dataService } from './services/dataService';
 
@@ -113,6 +114,8 @@ const AppContent: React.FC = () => {
         return <VoucherEntryView />;
       case 'accounting_daybook':
         return <DayBookView />;
+      case 'accounting_bank_cash_book':
+        return <BankCashBookView />;
       case 'accounting_ledger':
         return <GeneralLedgerView />;
       case 'accounting_trial_balance':
@@ -147,6 +150,12 @@ const AppContent: React.FC = () => {
         <Header
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           activeTab={activeTab}
+          onNavigate={(tab, targetId) => {
+            setActiveTab(tab);
+            if (targetId && (tab === 'orders' || tab === 'order_history')) {
+              setSelectedOrderId(targetId);
+            }
+          }}
         />
 
         {/* Scrollable View Container */}

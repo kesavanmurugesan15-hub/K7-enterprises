@@ -1,20 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useBusiness } from '../../context/BusinessContext';
-import { Bell, Search, ShieldCheck, Store, Truck, UserCheck, Menu, X, CheckCheck } from 'lucide-react';
+import { dataService } from '../../services/dataService';
+import type { GlobalSearchResult } from '../../types/accounting';
 import type { UserRole } from '../../types/auth';
 import { formatDateTime } from '../../utils/date';
+import {
+  Bell,
+  Search,
+  ShieldCheck,
+  Store,
+  Truck,
+  UserCheck,
+  Menu,
+  X,
+  CheckCheck,
+  Package,
+  Building,
+  Receipt,
+  ClipboardList,
+  Loader2
+} from 'lucide-react';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
   activeTab: string;
+  onNavigate?: (tab: string, targetId?: string) => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, activeTab }) => {
+export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, activeTab, onNavigate }) => {
   const { currentUser, activeRole, switchRole } = useAuth();
   const { settings, notifications, unreadNotificationCount, markNotificationRead, markAllNotificationsRead } = useBusiness();
   const [showNotifDrawer, setShowNotifDrawer] = useState(false);
   const [showRoleMenu, setShowRoleMenu] = useState(false);
+
+  // Global Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<GlobalSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const roleLabels: Record<UserRole, { label: string; icon: React.ElementType; color: string }> = {
     admin: { label: 'Administrator', icon: ShieldCheck, color: 'text-brand' },
@@ -45,6 +70,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, activeTab }) =>
       accounting_coa: 'Chart of Accounts (COA)',
       accounting_vouchers: 'Double-Entry Vouchers Entry',
       accounting_daybook: 'Day Book (Daily Registers)',
+      accounting_bank_cash_book: 'Bank & Cash Book (Date-Wise Register)',
       accounting_ledger: 'General & Customer/Supplier Ledger',
       accounting_trial_balance: 'Trial Balance Verification',
       accounting_pnl: 'Profit & Loss Statement',
@@ -53,6 +79,61 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, activeTab }) =>
       bank_reconciliation: 'Bank Reconciliation & Statement Import'
     };
     return titles[tab] || 'Overview';
+  };
+
+  // Close search dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setIsSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Debounced search query
+  useEffect(() => {
+    if (!searchQuery || searchQuery.trim().length < 2) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    setIsSearchOpen(true);
+    const timer = setTimeout(() => {
+      const results = dataService.searchGlobal(searchQuery, activeRole, currentUser.retailerId);
+      setSearchResults(results);
+      setIsSearching(false);
+    }, 120);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, activeRole, currentUser.retailerId]);
+
+  const handleSelectSearchResult = (result: GlobalSearchResult) => {
+    setIsSearchOpen(false);
+    setSearchQuery('');
+    if (onNavigate) {
+      onNavigate(result.targetTab, result.targetId);
+    }
+  };
+
+  const getCategoryIcon = (cat: GlobalSearchResult['category']) => {
+    switch (cat) {
+      case 'PRODUCT':
+        return <Package className="w-3.5 h-3.5 text-amber-600" />;
+      case 'RETAILER':
+        return <Store className="w-3.5 h-3.5 text-blue-600" />;
+      case 'SUPPLIER':
+        return <Building className="w-3.5 h-3.5 text-purple-600" />;
+      case 'ORDER':
+        return <Truck className="w-3.5 h-3.5 text-brand" />;
+      case 'INVOICE':
+        return <Receipt className="w-3.5 h-3.5 text-emerald-600" />;
+      case 'PURCHASE':
+        return <ClipboardList className="w-3.5 h-3.5 text-cyan-600" />;
+    }
   };
 
   return (
@@ -76,16 +157,83 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, activeTab }) =>
         </div>
       </div>
 
-      {/* Right Controls: Role Switcher & Notifications & Profile */}
+      {/* Right Controls: Search, Role Switcher, Notifications, Profile */}
       <div className="flex items-center gap-3">
-        {/* Global Search Bar (compact enterprise style) */}
-        <div className="hidden lg:flex items-center relative w-64">
-          <Search className="w-3.5 h-3.5 text-ink-muted absolute left-3 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Search SKU, invoice, retailer..."
-            className="w-full text-xs pl-8 pr-3 py-1.5 bg-slate-50 border border-divider rounded-md focus:bg-white focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand text-ink-primary"
-          />
+        {/* Global Search Bar with Live Omnibox */}
+        <div ref={searchContainerRef} className="relative w-48 sm:w-64 lg:w-80">
+          <div className="relative flex items-center">
+            <Search className="w-3.5 h-3.5 text-ink-muted absolute left-3 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onFocus={() => {
+                if (searchQuery.length >= 2) setIsSearchOpen(true);
+              }}
+              placeholder="Search SKU, invoice, retailer, order..."
+              className="w-full text-xs pl-8 pr-7 py-1.5 bg-slate-50 border border-divider rounded-md focus:bg-white focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand text-ink-primary"
+            />
+            {isSearching ? (
+              <Loader2 className="w-3.5 h-3.5 text-brand absolute right-2.5 animate-spin" />
+            ) : searchQuery ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSearchResults([]);
+                  setIsSearchOpen(false);
+                }}
+                className="absolute right-2 text-ink-muted hover:text-ink-primary p-0.5"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            ) : null}
+          </div>
+
+          {/* Search Dropdown Results */}
+          {isSearchOpen && (
+            <div className="absolute left-0 right-0 mt-1.5 bg-white border border-divider rounded-lg shadow-enterprise-lg z-50 overflow-hidden text-xs max-h-96 overflow-y-auto">
+              {isSearching ? (
+                <div className="p-4 text-center text-ink-muted flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-brand" />
+                  <span>Searching database records...</span>
+                </div>
+              ) : searchResults.length === 0 ? (
+                <div className="p-4 text-center text-ink-muted">
+                  No records found matching "{searchQuery}".
+                </div>
+              ) : (
+                <div className="divide-y divide-divider/70">
+                  <div className="px-3 py-1.5 bg-slate-50 text-[10px] font-bold text-ink-muted uppercase tracking-wider flex justify-between items-center">
+                    <span>Search Results ({searchResults.length})</span>
+                    <span>Click to Open</span>
+                  </div>
+                  {searchResults.map(res => (
+                    <div
+                      key={`${res.category}_${res.id}`}
+                      onClick={() => handleSelectSearchResult(res)}
+                      className="p-2.5 hover:bg-brand-50/50 cursor-pointer transition-colors flex items-start gap-2.5"
+                    >
+                      <div className="mt-0.5 p-1 rounded bg-slate-100 shrink-0">
+                        {getCategoryIcon(res.category)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-semibold text-ink-primary truncate text-xs">{res.title}</p>
+                          {res.badge && (
+                            <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-slate-100 text-ink-secondary shrink-0 border border-slate-200">
+                              {res.badge}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-ink-secondary truncate mt-0.5">{res.subtitle}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Role Switcher Pill */}

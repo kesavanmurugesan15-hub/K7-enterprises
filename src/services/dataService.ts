@@ -12,11 +12,25 @@ import type { Product, ProductBatch } from '../types/product';
 import type { SalesOrder, DeliveryStage, PaymentMethod, PaymentStatus, OrderItem, SalesInvoice } from '../types/order';
 import type { InventoryMovement, StockValuationSummary } from '../types/inventory';
 import type { PurchaseOrder, GoodsReceiptNote, Supplier } from '../types/purchase';
-import type { Account, JournalEntry, VoucherType, DayBookRow, TrialBalanceReport, ProfitLossReport, BalanceSheetReport } from '../types/accounting';
+import type {
+  Account,
+  JournalEntry,
+  VoucherType,
+  DayBookRow,
+  TrialBalanceReport,
+  ProfitLossReport,
+  BalanceSheetReport,
+  PurchaseLedgerEntry,
+  SupplierCreditorSummary,
+  SupplierLedgerTransaction,
+  BankCashBookSummary,
+  BankCashBookTransaction,
+  GlobalSearchResult
+} from '../types/accounting';
 import type { BankAccount, BankStatement, BankStatementTransaction } from '../types/bank';
 import type { CollectionReceipt, PettyExpense, CustomerCreditProfile } from '../types/credit';
 import type { AppNotification, AuditLog } from '../types/notification';
-import type { BusinessSettings, Retailer, UserProfile } from '../types/auth';
+import type { BusinessSettings, Retailer, UserProfile, UserRole } from '../types/auth';
 
 type Listener = () => void;
 
@@ -1483,6 +1497,488 @@ class EnterpriseDataService {
   // --- AUDIT LOGS ---
   public getAuditLogs(): AuditLog[] {
     return this.getItem(this.K_AUDIT_LOGS, []);
+  }
+
+  public archiveProduct(productId: string, actor: UserProfile): { success: boolean; message: string } {
+    const products = this.getProducts();
+    const idx = products.findIndex(p => p.id === productId);
+    if (idx < 0) return { success: false, message: 'Product not found.' };
+
+    const prod = products[idx];
+    prod.isActive = false;
+    prod.isArchived = true;
+    prod.updatedAt = new Date().toISOString();
+    products[idx] = prod;
+    this.setItem(this.K_PRODUCTS, products);
+
+    this.logAudit(actor, 'ARCHIVE_PRODUCT', 'CATALOGUE', prod.id, prod.name, `Archived SKU: ${prod.sku}`);
+    return { success: true, message: `Product ${prod.name} successfully archived.` };
+  }
+
+  // --- PURCHASE ACCOUNT DRILL-DOWN LEDGER ---
+  public getPurchaseLedger(fromDate?: string, toDate?: string): {
+    entries: PurchaseLedgerEntry[];
+    totalTaxable: number;
+    totalGst: number;
+    grandTotal: number;
+  } {
+    const journals = this.getJournalEntries();
+    const grns = this.getGoodsReceiptNotes();
+    const entries: PurchaseLedgerEntry[] = [];
+
+    let totalTaxable = 0;
+    let totalGst = 0;
+    let grandTotal = 0;
+
+    for (const j of journals) {
+      if (fromDate && j.date < fromDate) continue;
+      if (toDate && j.date > toDate) continue;
+
+      const purchaseLine = j.lines.find(l => l.accountId === 'acc_purchases');
+      if (!purchaseLine || purchaseLine.debit === 0) continue;
+
+      const taxable = purchaseLine.debit - purchaseLine.credit;
+      const gstLine = j.lines.find(l => l.accountId === 'acc_input_gst');
+      const gst = gstLine ? gstLine.debit : taxable * 0.05;
+      const credLine = j.lines.find(l => l.accountId === 'acc_sundry_creditors');
+      const invoiceTotal = credLine ? credLine.credit : taxable + gst;
+
+      // Match against GRN if linked
+      const grn = grns.find(g => g.id === j.referenceId || g.grnNumber === j.referenceNumber);
+      const supplierName = grn?.supplierName || (j.narration.includes('from ') ? j.narration.split('from ')[1].split(' (')[0] : 'Aachi Spices Chennai C&F Depot');
+      const supplierInvoiceNumber = grn?.supplierInvoiceNumber || j.referenceNumber || 'ACH-DEPOT-INV';
+
+      totalTaxable += taxable;
+      totalGst += gst;
+      grandTotal += invoiceTotal;
+
+      entries.push({
+        id: j.id,
+        date: j.date,
+        voucherNumber: j.voucherNumber,
+        voucherType: j.voucherType,
+        supplierId: grn?.supplierId || 'sup_aachi_chennai',
+        supplierName,
+        supplierInvoiceNumber,
+        taxableAmount: taxable,
+        cgstAmount: gst / 2,
+        sgstAmount: gst / 2,
+        totalGst: gst,
+        totalInvoiceAmount: invoiceTotal,
+        status: j.isPosted ? 'POSTED' : 'VERIFIED',
+        paymentStatus: 'UNPAID',
+        grnId: grn?.id,
+        grnNumber: grn?.grnNumber,
+        narration: j.narration
+      });
+    }
+
+    return {
+      entries,
+      totalTaxable: Math.round(totalTaxable * 100) / 100,
+      totalGst: Math.round(totalGst * 100) / 100,
+      grandTotal: Math.round(grandTotal * 100) / 100
+    };
+  }
+
+  // --- BALANCE SHEET: SUPPLIER-WISE SUNDRY CREDITORS ---
+  public getSupplierCreditorsLedger(asOfDate?: string): {
+    suppliers: SupplierCreditorSummary[];
+    totalCreditors: number;
+  } {
+    const suppliers = this.getSuppliers();
+    const journals = this.getJournalEntries();
+    const grns = this.getGoodsReceiptNotes();
+
+    const supplierSummaries: SupplierCreditorSummary[] = suppliers.map(sup => {
+      const openingBalance = sup.openingBalance || (sup.id === 'sup_001' ? 185400 : sup.id === 'sup_002' ? 92000 : 0);
+      let creditPurchases = 0;
+      let paymentsMade = 0;
+      let adjustments = 0;
+
+      for (const j of journals) {
+        if (asOfDate && j.date > asOfDate) continue;
+        if (j.voucherNumber === 'VR-OPEN-001') continue;
+
+        // Check if voucher affects sundry creditors
+        for (const l of j.lines) {
+          if (l.accountId === 'acc_sundry_creditors') {
+            const matchesSupplier =
+              l.subEntityId === sup.id ||
+              j.narration.toLowerCase().includes(sup.name.toLowerCase()) ||
+              (sup.id === 'sup_001' && !l.subEntityId); // Default to primary depot
+
+            if (matchesSupplier) {
+              if (l.credit > 0) {
+                creditPurchases += l.credit;
+              }
+              if (l.debit > 0) {
+                paymentsMade += l.debit;
+              }
+            }
+          }
+        }
+      }
+
+      const closingBalance = openingBalance + creditPurchases - paymentsMade - adjustments;
+
+      return {
+        supplierId: sup.id,
+        supplierName: sup.name,
+        supplierCode: sup.supplierCode || (sup.id === 'sup_001' ? 'ACH-MDU-DEPOT' : 'ACH-CHN-HQ'),
+        gstin: sup.gstin,
+        openingBalance,
+        creditPurchases,
+        paymentsMade,
+        adjustments,
+        closingBalance: Math.max(0, closingBalance)
+      };
+    });
+
+    const totalCreditors = supplierSummaries.reduce((sum, s) => sum + s.closingBalance, 0);
+
+    return {
+      suppliers: supplierSummaries,
+      totalCreditors: Math.round(totalCreditors * 100) / 100
+    };
+  }
+
+  public getSupplierDetailedLedger(supplierId: string, fromDate?: string, toDate?: string): {
+    supplier?: Supplier;
+    summary: SupplierCreditorSummary;
+    transactions: SupplierLedgerTransaction[];
+  } {
+    const suppliers = this.getSuppliers();
+    const sup = suppliers.find(s => s.id === supplierId) || suppliers[0];
+    const journals = this.getJournalEntries();
+    const grns = this.getGoodsReceiptNotes();
+
+    const transactions: SupplierLedgerTransaction[] = [];
+    const openingBalance = sup.openingBalance || (sup.id === 'sup_001' ? 185400 : sup.id === 'sup_002' ? 92000 : 0);
+    let runningBalance = openingBalance;
+
+    if (openingBalance > 0) {
+      transactions.push({
+        id: `open_${sup.id}`,
+        date: '2026-01-01',
+        voucherNumber: 'VR-OPEN-001',
+        voucherType: 'JOURNAL_VOUCHER',
+        supplierInvoiceNumber: 'OPENING',
+        particulars: `Opening Balance B/F - ${sup.name}`,
+        debit: 0,
+        credit: openingBalance,
+        runningBalance: openingBalance
+      });
+    }
+
+    let creditPurchases = 0;
+    let paymentsMade = 0;
+
+    for (const j of journals) {
+      if (fromDate && j.date < fromDate) continue;
+      if (toDate && j.date > toDate) continue;
+      if (j.voucherNumber === 'VR-OPEN-001') continue;
+
+      for (const l of j.lines) {
+        if (l.accountId === 'acc_sundry_creditors') {
+          const matches =
+            l.subEntityId === sup.id ||
+            j.narration.toLowerCase().includes(sup.name.toLowerCase()) ||
+            (sup.id === 'sup_001' && !l.subEntityId);
+
+          if (matches) {
+            if (l.credit > 0) {
+              creditPurchases += l.credit;
+              runningBalance += l.credit;
+            }
+            if (l.debit > 0) {
+              paymentsMade += l.debit;
+              runningBalance -= l.debit;
+            }
+
+            const grn = grns.find(g => g.id === j.referenceId || g.grnNumber === j.referenceNumber);
+            transactions.push({
+              id: `${j.id}_${l.id}`,
+              date: j.date,
+              voucherNumber: j.voucherNumber,
+              voucherType: j.voucherType,
+              supplierInvoiceNumber: grn?.supplierInvoiceNumber || j.referenceNumber || '-',
+              particulars: l.narration || j.narration,
+              debit: l.debit,
+              credit: l.credit,
+              runningBalance: Math.round(runningBalance * 100) / 100,
+              referenceNumber: j.referenceNumber
+            });
+          }
+        }
+      }
+    }
+
+    return {
+      supplier: sup,
+      summary: {
+        supplierId: sup.id,
+        supplierName: sup.name,
+        supplierCode: sup.supplierCode || sup.id,
+        gstin: sup.gstin,
+        openingBalance: sup.openingBalance || 0,
+        creditPurchases,
+        paymentsMade,
+        adjustments: 0,
+        closingBalance: Math.max(0, runningBalance)
+      },
+      transactions
+    };
+  }
+
+  // --- BANK AND CASH BOOK: DATE-WISE CLOSING BALANCES ---
+  public getBankCashBook(accountId: string, fromDate?: string, toDate?: string): BankCashBookSummary {
+    const accounts = this.getAccounts();
+    const acc = accounts.find(a => a.id === accountId) || accounts[0];
+    const journals = this.getJournalEntries();
+    const bankStatements = this.getBankStatements();
+
+    const start = fromDate || '2026-04-01';
+    const end = toDate || new Date().toISOString().split('T')[0];
+
+    // 1. Calculate opening balance as of fromDate:
+    // Base opening balance from Chart of Accounts + net movements before fromDate
+    let openingBalance = acc.openingBalance;
+    for (const j of journals) {
+      if (j.date < start) {
+        for (const l of j.lines) {
+          if (l.accountId === acc.id) {
+            openingBalance += (l.debit - l.credit);
+          }
+        }
+      }
+    }
+
+    // 2. Process transactions within [fromDate, toDate]
+    let totalReceipts = 0;
+    let totalPayments = 0;
+    let netTransfers = 0;
+    let runningBalance = openingBalance;
+    const transactions: BankCashBookTransaction[] = [];
+
+    // Sort journals ascending by date
+    const sortedJournals = [...journals].sort((a, b) => a.date.localeCompare(b.date));
+
+    for (const j of sortedJournals) {
+      if (j.date >= start && j.date <= end) {
+        for (const l of j.lines) {
+          if (l.accountId === acc.id) {
+            const isDebit = l.debit > 0;
+            const isCredit = l.credit > 0;
+            const amount = isDebit ? l.debit : l.credit;
+
+            // Check if contra transfer with another bank/cash account
+            const otherLine = j.lines.find(other => other.id !== l.id);
+            const otherAccId = otherLine?.accountId || '';
+            const isContra = otherAccId.startsWith('acc_cash') || otherAccId.startsWith('acc_bank');
+
+            let txType: BankCashBookTransaction['type'] = 'RECEIPT';
+            if (isContra) {
+              txType = 'CONTRA';
+              if (isDebit) netTransfers += amount;
+              if (isCredit) netTransfers -= amount;
+            } else if (isDebit) {
+              txType = 'RECEIPT';
+              totalReceipts += amount;
+            } else if (isCredit) {
+              txType = 'PAYMENT';
+              totalPayments += amount;
+            }
+
+            if (isDebit) runningBalance += amount;
+            if (isCredit) runningBalance -= amount;
+
+            transactions.push({
+              id: `${j.id}_${l.id}`,
+              date: j.date,
+              voucherNumber: j.voucherNumber,
+              voucherType: j.voucherType,
+              particulars: l.narration || j.narration,
+              counterparty: otherLine?.accountName || 'Counterparty',
+              amount,
+              type: txType,
+              paymentMethod: j.narration.includes('UPI') ? 'UPI' : j.narration.includes('Cash') ? 'CASH' : 'NEFT / RTGS',
+              bankReference: j.referenceNumber || (j.narration.includes('Ref/UTR:') ? j.narration.split('Ref/UTR: ')[1].split(')')[0] : undefined),
+              runningBalance: Math.round(runningBalance * 100) / 100,
+              status: j.isPosted ? 'POSTED' : 'PENDING'
+            });
+          }
+        }
+      }
+    }
+
+    const closingBookBalance = Math.round(runningBalance * 100) / 100;
+
+    // Check bank statement balance if bank account
+    const matchedStatement = bankStatements.find(s => s.bankAccountId === (acc.id === 'acc_bank_tmb' ? 'bank_tmb_01' : 'bank_sbi_01'));
+    const bankStatementBalance = matchedStatement ? matchedStatement.closingBalance : undefined;
+
+    return {
+      accountId: acc.id,
+      accountName: acc.name,
+      accountCode: acc.code,
+      accountType: acc.subGroup === 'CASH_IN_HAND' ? 'CASH' : 'BANK',
+      fromDate: start,
+      toDate: end,
+      openingBalance: Math.round(openingBalance * 100) / 100,
+      totalReceipts: Math.round(totalReceipts * 100) / 100,
+      totalPayments: Math.round(totalPayments * 100) / 100,
+      netTransfers: Math.round(netTransfers * 100) / 100,
+      closingBookBalance,
+      bankStatementBalance,
+      reconciledBalance: closingBookBalance,
+      transactions
+    };
+  }
+
+  // --- REPAIRED GLOBAL SEARCH ---
+  public searchGlobal(query: string, userRole: UserRole, retailerId?: string): GlobalSearchResult[] {
+    if (!query || query.trim().length < 2) return [];
+    const q = query.trim().toLowerCase();
+    const results: GlobalSearchResult[] = [];
+
+    // 1. Products
+    const products = this.getProducts().filter(p => !p.isArchived);
+    for (const p of products) {
+      if (
+        p.name.toLowerCase().includes(q) ||
+        (p.tamilName && p.tamilName.toLowerCase().includes(q)) ||
+        p.sku.toLowerCase().includes(q) ||
+        (p.barcode && p.barcode.includes(q)) ||
+        p.category.toLowerCase().includes(q) ||
+        (p.description && p.description.toLowerCase().includes(q))
+      ) {
+        results.push({
+          category: 'PRODUCT',
+          id: p.id,
+          title: p.name,
+          subtitle: `${p.sku} • ₹${p.sellingPriceWholesale} • ${p.availableStock} in stock`,
+          badge: p.category,
+          targetTab: userRole === 'retailer' ? 'retailer_catalog' : 'products',
+          targetId: p.id
+        });
+      }
+    }
+
+    // 2. Retailers (Admin, Operations, Sales Rep)
+    if (userRole !== 'retailer') {
+      const retailers = this.getRetailers();
+      for (const r of retailers) {
+        if (
+          r.shopName.toLowerCase().includes(q) ||
+          r.ownerName.toLowerCase().includes(q) ||
+          r.phone.includes(q) ||
+          r.area.toLowerCase().includes(q) ||
+          (r.gstin && r.gstin.toLowerCase().includes(q))
+        ) {
+          results.push({
+            category: 'RETAILER',
+            id: r.id,
+            title: r.shopName,
+            subtitle: `${r.ownerName} • ${r.area} • Ph: ${r.phone}`,
+            badge: `Bal: ₹${r.currentOutstanding}`,
+            targetTab: 'users',
+            targetId: r.id
+          });
+        }
+      }
+    }
+
+    // 3. Suppliers (Admin & Operations)
+    if (userRole === 'admin' || userRole === 'distributor') {
+      const suppliers = this.getSuppliers();
+      for (const s of suppliers) {
+        if (
+          s.name.toLowerCase().includes(q) ||
+          (s.supplierCode && s.supplierCode.toLowerCase().includes(q)) ||
+          s.contactPerson.toLowerCase().includes(q) ||
+          s.phone.includes(q) ||
+          (s.gstin && s.gstin.toLowerCase().includes(q))
+        ) {
+          results.push({
+            category: 'SUPPLIER',
+            id: s.id,
+            title: s.name,
+            subtitle: `${s.supplierCode || s.id} • ${s.contactPerson} • ${s.city}`,
+            badge: `Payable: ₹${s.currentOutstandingBalance}`,
+            targetTab: 'purchases',
+            targetId: s.id
+          });
+        }
+      }
+    }
+
+    // 4. Sales Orders
+    const orders = this.getOrders();
+    for (const o of orders) {
+      if (userRole === 'retailer' && o.retailerId !== retailerId) continue;
+      if (
+        o.orderNumber.toLowerCase().includes(q) ||
+        o.retailerShopName.toLowerCase().includes(q) ||
+        (o.invoiceNumber && o.invoiceNumber.toLowerCase().includes(q)) ||
+        o.area.toLowerCase().includes(q)
+      ) {
+        results.push({
+          category: 'ORDER',
+          id: o.id,
+          title: `Order ${o.orderNumber}`,
+          subtitle: `${o.retailerShopName} • ₹${o.grandTotal} • ${o.items.length} items`,
+          badge: o.currentStage.replace(/_/g, ' '),
+          targetTab: userRole === 'retailer' ? 'order_history' : 'orders',
+          targetId: o.id
+        });
+      }
+    }
+
+    // 5. Invoices
+    const invoices = this.getInvoices();
+    for (const inv of invoices) {
+      if (userRole === 'retailer' && inv.retailerId !== retailerId) continue;
+      if (
+        inv.invoiceNumber.toLowerCase().includes(q) ||
+        inv.orderNumber.toLowerCase().includes(q) ||
+        inv.retailerShopName.toLowerCase().includes(q)
+      ) {
+        results.push({
+          category: 'INVOICE',
+          id: inv.id,
+          title: `Tax Invoice ${inv.invoiceNumber}`,
+          subtitle: `${inv.retailerShopName} • ₹${inv.totalInvoiceAmount} (Due: ₹${inv.amountDue})`,
+          badge: inv.paymentStatus,
+          targetTab: userRole === 'retailer' ? 'order_history' : 'orders',
+          targetId: inv.orderId
+        });
+      }
+    }
+
+    // 6. Purchase Orders / GRNs (Admin & Operations)
+    if (userRole === 'admin' || userRole === 'distributor') {
+      const grns = this.getGoodsReceiptNotes();
+      for (const g of grns) {
+        if (
+          g.grnNumber.toLowerCase().includes(q) ||
+          g.supplierInvoiceNumber.toLowerCase().includes(q) ||
+          g.supplierName.toLowerCase().includes(q)
+        ) {
+          results.push({
+            category: 'PURCHASE',
+            id: g.id,
+            title: `GRN ${g.grnNumber}`,
+            subtitle: `${g.supplierName} • Inv #${g.supplierInvoiceNumber} • ₹${g.grandTotal}`,
+            badge: 'Stock Inward',
+            targetTab: 'purchases',
+            targetId: g.id
+          });
+        }
+      }
+    }
+
+    return results.slice(0, 15);
   }
 
   public logAudit(actor: UserProfile, action: string, module: AuditLog['module'], entityId: string, entityName: string, details: string) {

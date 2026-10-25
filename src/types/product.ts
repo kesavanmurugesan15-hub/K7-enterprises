@@ -39,6 +39,8 @@ export interface Product {
   stockReserved: number;
   availableStock: number;
   imageUrl?: string;
+  description?: string;
+  isArchived?: boolean;
   isActive: boolean;
   batches: ProductBatch[];
   createdAt: string;

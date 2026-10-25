@@ -18,7 +18,8 @@ import {
   TrendingUp,
   Landmark,
   Clock,
-  ClipboardList
+  ClipboardList,
+  Wallet
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -159,6 +160,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <NavItem id="accounting_coa" label="Chart of Accounts" icon={BookOpen} />
               <NavItem id="accounting_vouchers" label="Voucher Entry" icon={FileSpreadsheet} />
               <NavItem id="accounting_daybook" label="Day Book" icon={ClipboardList} />
+              <NavItem id="accounting_bank_cash_book" label="Bank & Cash Book" icon={Wallet} />
               <NavItem id="accounting_ledger" label="General Ledger" icon={BookOpen} />
               <NavItem id="accounting_trial_balance" label="Trial Balance" icon={Scale} />
               <NavItem id="accounting_pnl" label="Profit & Loss" icon={TrendingUp} />
