@@ -10,7 +10,8 @@ import { DeliveryStepper } from '../common/DeliveryStepper';
 import { formatINR } from '../../utils/currency';
 import { formatDateTime, formatDate } from '../../utils/date';
 import { printElementById } from '../../utils/export';
-import { Truck, Check, X, Printer, Search, ShieldAlert, ArrowRight, UserCheck, Package } from 'lucide-react';
+import { Truck, Check, X, Printer, Search, ShieldAlert, ArrowRight, UserCheck, Package, Download } from 'lucide-react';
+import { downloadInvoicePDF } from '../../utils/invoiceGenerator';
 
 export const DeliveryTrackerView: React.FC = () => {
   const { currentUser, isAdmin, isOperations, isDelivery } = useAuth();
@@ -191,6 +192,14 @@ export const DeliveryTrackerView: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    icon={Download}
+                    onClick={() => downloadInvoicePDF(selectedOrder, settings)}
+                  >
+                    Download PDF
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -426,6 +435,14 @@ export const DeliveryTrackerView: React.FC = () => {
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => setIsInvoiceModalOpen(false)}>
                 Close
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                icon={Download}
+                onClick={() => downloadInvoicePDF(selectedOrder, settings)}
+              >
+                Download PDF
               </Button>
               <Button
                 variant="primary"

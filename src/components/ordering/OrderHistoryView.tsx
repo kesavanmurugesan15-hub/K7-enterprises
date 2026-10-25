@@ -9,7 +9,8 @@ import { DeliveryStepper } from '../common/DeliveryStepper';
 import { formatINR } from '../../utils/currency';
 import { formatDateTime, formatDate } from '../../utils/date';
 import { printElementById } from '../../utils/export';
-import { Search, RotateCcw, Printer, ChevronRight, Clock } from 'lucide-react';
+import { Search, RotateCcw, Printer, ChevronRight, Clock, Download } from 'lucide-react';
+import { downloadInvoicePDF } from '../../utils/invoiceGenerator';
 
 interface OrderHistoryViewProps {
   onReorder: (order: SalesOrder) => void;
@@ -18,6 +19,7 @@ interface OrderHistoryViewProps {
 
 export const OrderHistoryView: React.FC<OrderHistoryViewProps> = ({ onReorder, selectedOrderId }) => {
   const { currentUser, isRetailer } = useAuth();
+  const { settings } = useBusiness();
   const [orders, setOrders] = useState<SalesOrder[]>(dataService.getOrders());
   const [activeOrder, setActiveOrder] = useState<SalesOrder | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -140,6 +142,14 @@ export const OrderHistoryView: React.FC<OrderHistoryViewProps> = ({ onReorder, s
                 </div>
 
                 <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    icon={Download}
+                    onClick={() => downloadInvoicePDF(activeOrder, settings)}
+                  >
+                    Download Invoice
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
