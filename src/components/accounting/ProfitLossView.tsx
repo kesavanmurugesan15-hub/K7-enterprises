@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useBusiness } from '../../context/BusinessContext';
 import { dataService } from '../../services/dataService';
 import type { ProfitLossReport, PurchaseLedgerEntry, JournalEntry } from '../../types/accounting';
 import { formatINR } from '../../utils/currency';
@@ -10,6 +11,7 @@ import { Badge } from '../common/Badge';
 import { TrendingUp, Download, Printer, ChevronRight, Calendar, ArrowLeft, Eye, FileText, CheckCircle2 } from 'lucide-react';
 
 export const ProfitLossView: React.FC = () => {
+  const { settings } = useBusiness();
   const [fromDate, setFromDate] = useState('2026-04-01');
   const [toDate, setToDate] = useState(getTodayDateString());
   const [report, setReport] = useState<ProfitLossReport>(dataService.getProfitAndLoss(fromDate, toDate));
@@ -64,7 +66,7 @@ export const ProfitLossView: React.FC = () => {
       ['K7 Enterprise — Profit & Loss Statement'],
       [`Period: ${report.fromDate} to ${report.toDate}`],
       ['Classification', 'Category', 'Amount (INR)'],
-      ['Revenue', 'Aachi Sales Revenue', report.income.salesRevenue.toString()],
+      ['Revenue', 'Sales Revenue', report.income.salesRevenue.toString()],
       ['Cost', 'Purchases & COGS', report.expenses.costOfGoodsSold.toString()],
       ['Gross Profit', 'Revenue minus Purchases', report.grossProfit.toString()],
       ['Operating Expense', 'Freight & Inward Transport', report.expenses.freightAndDelivery.toString()],
@@ -167,10 +169,14 @@ export const ProfitLossView: React.FC = () => {
       <div id="printable-pnl" className="bg-surface border border-divider rounded-lg shadow-enterprise overflow-hidden text-xs">
         <div className="p-5 border-b border-divider bg-slate-50 flex items-center justify-between">
           <div>
-            <h3 className="font-bold text-base text-ink-primary">K7 Enterprise — Profit & Loss Account</h3>
+            <h3 className="font-bold text-base text-ink-primary">
+              {settings.businessName || 'K7 Enterprise'} — Profit & Loss Account
+            </h3>
             <p className="text-xs text-ink-secondary">For the Period: {formatDate(report.fromDate)} to {formatDate(report.toDate)}</p>
           </div>
-          <span className="text-xs font-semibold text-brand">Aachi Distributor Thoothukudi</span>
+          <span className="text-xs font-semibold text-brand">
+            {settings.distributorName || (settings.city ? `${settings.city} Hub` : 'FMCG Distribution')}
+          </span>
         </div>
 
         <div className="p-6 space-y-6">
@@ -181,7 +187,7 @@ export const ProfitLossView: React.FC = () => {
             </h4>
             <div className="divide-y divide-divider/60 pt-1">
               <div className="py-2.5 flex justify-between items-center">
-                <span className="text-ink-primary">Revenue from Aachi Product Sales</span>
+                <span className="text-ink-primary">Revenue from Wholesale Product Sales</span>
                 <span className="font-mono font-semibold text-num">{formatINR(report.income.salesRevenue)}</span>
               </div>
               <div className="py-2.5 flex justify-between items-center font-bold bg-slate-50/70 px-2 rounded">
@@ -207,7 +213,7 @@ export const ProfitLossView: React.FC = () => {
               >
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-ink-primary group-hover:text-brand transition-colors">
-                    Purchases of Aachi Stock (C&F Depot Inwards)
+                    Purchases & Cost of Goods Sold
                   </span>
                   <Badge variant="info">Click to Drill Down</Badge>
                 </div>
@@ -273,7 +279,7 @@ export const ProfitLossView: React.FC = () => {
         isOpen={isPurchaseLedgerOpen}
         onClose={() => setIsPurchaseLedgerOpen(false)}
         title="Purchase Account Ledger (Drill-Down)"
-        subtitle={`Period: ${formatDate(fromDate)} to ${formatDate(toDate)} • Head: Purchases of Aachi Stock (acc_purchases)`}
+        subtitle={`Period: ${formatDate(fromDate)} to ${formatDate(toDate)} • Head: Purchases & Cost of Goods Sold (acc_purchases)`}
         maxWidth="4xl"
         footer={
           <div className="flex items-center justify-between w-full">

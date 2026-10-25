@@ -5,613 +5,73 @@ import type { Account } from '../types/accounting';
 import type { BankAccount } from '../types/bank';
 import type { SalesOrder } from '../types/order';
 
-export const INITIAL_BUSINESS_SETTINGS: BusinessSettings = {
-  id: 'biz_k7_thoothukudi',
-  businessName: 'K7 Enterprise',
-  distributorName: 'K7 Enterprise',
-  subTitle: 'Aachi Masala Authorized Distributor — Thoothukudi District',
-  address: '142/3 Palayamkottai Road, Near VVD Signal, Cruz Fernandez Puram',
-  city: 'Thoothukudi',
-  district: 'Thoothukudi',
-  state: 'Tamil Nadu',
-  pincode: '628002',
-  phone: '+91 94431 82940',
-  email: 'k7enterprise.thoothukudi@gmail.com',
-  gstin: '33AAECK7890C1Z5',
-  panNumber: 'AAECK7890C',
-  fssaiNumber: '12423024000341',
+/**
+ * K7 ENTERPRISE — CLEAN PRODUCTION-READY SETUP MASTER DATA
+ * Zero hardcoded business data, zero sample transactions, zero fake balances.
+ * The system boots up clean, allowing the owner to configure their own business.
+ */
+
+export const CLEAN_BUSINESS_SETTINGS: BusinessSettings = {
+  id: 'biz_default',
+  businessName: '',
+  distributorName: '',
+  ownerName: '',
+  subTitle: '',
+  address: '',
+  city: '',
+  district: '',
+  state: '',
+  pincode: '',
+  phone: '',
+  email: '',
+  gstin: '',
+  panNumber: '',
+  fssaiNumber: '',
+  gstRegistered: false,
+  isConfigured: false,
   bankDetails: {
-    accountName: 'K7 ENTERPRISE',
-    accountNumber: '00410005081920',
-    bankName: 'Tamilnad Mercantile Bank (TMB)',
-    branch: 'Beach Road Main Branch, Thoothukudi',
-    ifscCode: 'TMBL0000004',
-    upiId: 'k7enterprise@tmb'
+    accountName: '',
+    accountNumber: '',
+    bankName: '',
+    branch: '',
+    ifscCode: '',
+    upiId: ''
   },
-  invoicePrefix: 'K7/INV/26-27/',
-  orderPrefix: 'K7-SO-',
+  invoicePrefix: 'INV/2026-27/',
+  orderPrefix: 'SO-',
   financialYear: '2026-27',
+  financialYearStartDate: '2026-04-01',
+  financialYearEndDate: '2027-03-31',
   requireOrderApprovalThreshold: 25000,
   enableFEFO: true,
   logoUrl: ''
 };
 
-export const INITIAL_USERS: UserProfile[] = [
+export const CLEAN_USERS: UserProfile[] = [
   {
-    id: 'usr_admin_01',
-    name: 'Kesavan K. (Proprietor)',
+    id: 'usr_admin',
+    name: 'System Administrator',
     email: 'admin@k7enterprise.in',
-    phone: '9443182940',
+    phone: '',
     role: 'admin',
-    businessId: 'biz_k7_thoothukudi',
-    businessName: 'K7 Enterprise',
+    businessId: 'biz_default',
+    businessName: '',
     isActive: true,
-    createdAt: '2026-01-15T09:00:00Z'
-  },
-  {
-    id: 'usr_ops_01',
-    name: 'Senthil Nathan (Operations Manager)',
-    email: 'ops@k7enterprise.in',
-    phone: '9842155410',
-    role: 'distributor',
-    businessId: 'biz_k7_thoothukudi',
-    businessName: 'K7 Enterprise',
-    isActive: true,
-    createdAt: '2026-01-20T10:00:00Z'
-  },
-  {
-    id: 'usr_sales_01',
-    name: 'Ramesh Kumar (Sales Officer - Thoothukudi Urban)',
-    email: 'ramesh.sales@k7enterprise.in',
-    phone: '9789012345',
-    role: 'sales_rep',
-    businessId: 'biz_k7_thoothukudi',
-    businessName: 'K7 Enterprise',
-    isActive: true,
-    createdAt: '2026-02-01T08:30:00Z'
-  },
-  {
-    id: 'usr_retailer_01',
-    name: 'M. Selvam (Selvam Stores)',
-    email: 'selvamstores.tuty@gmail.com',
-    phone: '9442088190',
-    role: 'retailer',
-    businessId: 'biz_k7_thoothukudi',
-    businessName: 'K7 Enterprise',
-    retailShopName: 'Selvam Super Store & Provisions',
-    retailerId: 'ret_001',
-    assignedSalesRepId: 'usr_sales_01',
-    address: '45, 3rd Street, Bryant Nagar',
-    city: 'Thoothukudi',
-    pincode: '628008',
-    gstin: '33AABCS1234E1Z2',
-    creditLimit: 50000,
-    creditDays: 14,
-    isActive: true,
-    createdAt: '2026-02-05T11:00:00Z'
-  },
-  {
-    id: 'usr_delivery_01',
-    name: 'Murugan P. (Van Driver & Delivery)',
-    email: 'delivery1@k7enterprise.in',
-    phone: '9629144820',
-    role: 'delivery',
-    businessId: 'biz_k7_thoothukudi',
-    businessName: 'K7 Enterprise',
-    isActive: true,
-    createdAt: '2026-02-10T08:00:00Z'
+    createdAt: new Date().toISOString()
   }
 ];
 
-export const INITIAL_RETAILERS: Retailer[] = [
-  {
-    id: 'ret_001',
-    shopName: 'Selvam Super Store & Provisions',
-    ownerName: 'M. Selvam',
-    phone: '9442088190',
-    email: 'selvamstores.tuty@gmail.com',
-    address: '45, 3rd Street, Bryant Nagar',
-    area: 'Bryant Nagar',
-    city: 'Thoothukudi',
-    pincode: '628008',
-    gstin: '33AABCS1234E1Z2',
-    creditLimit: 50000,
-    creditDays: 14,
-    currentOutstanding: 14250,
-    assignedSalesRepId: 'usr_sales_01',
-    assignedSalesRepName: 'Ramesh Kumar',
-    priceTier: 'wholesale',
-    isActive: true,
-    createdAt: '2026-02-05T11:00:00Z'
-  },
-  {
-    id: 'ret_002',
-    shopName: 'Sri Murugan Maligai',
-    ownerName: 'K. Shanmugavel',
-    phone: '9842577610',
-    email: 'muruganmaligai.miller@gmail.com',
-    address: '12-A, Millerpuram Main Road',
-    area: 'Millerpuram',
-    city: 'Thoothukudi',
-    pincode: '628002',
-    gstin: '33BBYSM5678F1Z4',
-    creditLimit: 75000,
-    creditDays: 21,
-    currentOutstanding: 28400,
-    assignedSalesRepId: 'usr_sales_01',
-    assignedSalesRepName: 'Ramesh Kumar',
-    priceTier: 'wholesale',
-    isActive: true,
-    createdAt: '2026-02-06T10:30:00Z'
-  },
-  {
-    id: 'ret_003',
-    shopName: 'Annai Mary Departmental Store',
-    ownerName: 'Anthony Xavier',
-    phone: '9443312980',
-    email: 'annaimary.roche@gmail.com',
-    address: '78, Great Cotton Road',
-    area: 'Old Bus Stand / Cotton Road',
-    city: 'Thoothukudi',
-    pincode: '628001',
-    gstin: '33CCDAM9922K1Z9',
-    creditLimit: 60000,
-    creditDays: 15,
-    currentOutstanding: 8900,
-    assignedSalesRepId: 'usr_sales_01',
-    assignedSalesRepName: 'Ramesh Kumar',
-    priceTier: 'wholesale',
-    isActive: true,
-    createdAt: '2026-02-12T14:15:00Z'
-  },
-  {
-    id: 'ret_004',
-    shopName: 'Subramanian & Co Grocery',
-    ownerName: 'P. Subramanian',
-    phone: '9360044550',
-    address: '22, Cruz Fernandez Puram',
-    area: 'Cruz Fernandez Puram',
-    city: 'Thoothukudi',
-    pincode: '628002',
-    creditLimit: 30000,
-    creditDays: 10,
-    currentOutstanding: 0,
-    assignedSalesRepId: 'usr_sales_01',
-    assignedSalesRepName: 'Ramesh Kumar',
-    priceTier: 'retail',
-    isActive: true,
-    createdAt: '2026-02-18T16:00:00Z'
-  }
-];
+export const CLEAN_RETAILERS: Retailer[] = [];
+export const CLEAN_SUPPLIERS: Supplier[] = [];
+export const CLEAN_PRODUCTS: Product[] = [];
+export const CLEAN_ORDERS: SalesOrder[] = [];
+export const CLEAN_BANK_ACCOUNTS: BankAccount[] = [];
 
-export const INITIAL_SUPPLIERS: Supplier[] = [
-  {
-    id: 'sup_001',
-    name: 'Aachi Spices & Foods Pvt Ltd (Madurai C&F)',
-    contactPerson: 'C&F Manager - Mr. Balasubramanian',
-    phone: '0452-2489100',
-    email: 'madurai.depot@aachigroup.com',
-    address: 'Plot No. 45, Kappalur Industrial Estate',
-    city: 'Madurai',
-    state: 'Tamil Nadu',
-    gstin: '33AAACA1299P1Z8',
-    panNumber: 'AAACA1299P',
-    paymentTermsDays: 21,
-    currentOutstandingBalance: 185400,
-    isActive: true,
-    createdAt: '2026-01-10T10:00:00Z'
-  },
-  {
-    id: 'sup_002',
-    name: 'Aachi Global Head Office (Chennai)',
-    contactPerson: 'Depot Dispatch Dept',
-    phone: '044-26572500',
-    email: 'chennai.orders@aachigroup.com',
-    address: 'No. 1926, 34th Street, Ishwarya Colony, Anna Nagar West',
-    city: 'Chennai',
-    state: 'Tamil Nadu',
-    gstin: '33AAACA1299P1Z1',
-    paymentTermsDays: 30,
-    currentOutstandingBalance: 92000,
-    isActive: true,
-    createdAt: '2026-01-12T11:00:00Z'
-  }
-];
-
-export const INITIAL_PRODUCTS: Product[] = [
-  {
-    id: 'prod_001',
-    name: 'Aachi Chilli Powder',
-    tamilName: 'ஆச்சி மிளகாய் தூள்',
-    sku: 'AACHI-CHL-100G',
-    barcode: '8901725101015',
-    category: 'Pure Spices',
-    brand: 'Aachi Masala',
-    packSize: '100g',
-    unitOfMeasure: 'PKT',
-    caseSize: 60,
-    purchaseRate: 36.50,
-    mrp: 52.00,
-    sellingPriceWholesale: 43.50,
-    sellingPriceRetail: 48.00,
-    gstPercent: 5,
-    hsnCode: '0910',
-    reorderLevel: 50,
-    stockOnHand: 420,
-    stockReserved: 40,
-    availableStock: 380,
-    imageUrl: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=400&q=80',
-    isActive: true,
-    batches: [
-      {
-        id: 'bat_chl_01',
-        batchNumber: 'B-CHL-2601',
-        mfgDate: '2026-01-05',
-        expDate: '2027-01-04',
-        quantity: 220,
-        reservedQuantity: 20,
-        purchaseRate: 36.50,
-        mrp: 52.00
-      },
-      {
-        id: 'bat_chl_02',
-        batchNumber: 'B-CHL-2602',
-        mfgDate: '2026-02-10',
-        expDate: '2027-02-09',
-        quantity: 200,
-        reservedQuantity: 20,
-        purchaseRate: 36.50,
-        mrp: 52.00
-      }
-    ],
-    createdAt: '2026-01-15T10:00:00Z',
-    updatedAt: '2026-02-20T12:00:00Z'
-  },
-  {
-    id: 'prod_002',
-    name: 'Aachi Turmeric Powder',
-    tamilName: 'ஆச்சி மஞ்சள் தூள்',
-    sku: 'AACHI-TUR-100G',
-    barcode: '8901725101022',
-    category: 'Pure Spices',
-    brand: 'Aachi Masala',
-    packSize: '100g',
-    unitOfMeasure: 'PKT',
-    caseSize: 60,
-    purchaseRate: 28.00,
-    mrp: 42.00,
-    sellingPriceWholesale: 34.00,
-    sellingPriceRetail: 38.00,
-    gstPercent: 5,
-    hsnCode: '0910',
-    reorderLevel: 40,
-    stockOnHand: 350,
-    stockReserved: 30,
-    availableStock: 320,
-    imageUrl: 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=400&q=80',
-    isActive: true,
-    batches: [
-      {
-        id: 'bat_tur_01',
-        batchNumber: 'B-TUR-2601',
-        mfgDate: '2026-01-08',
-        expDate: '2027-01-07',
-        quantity: 350,
-        reservedQuantity: 30,
-        purchaseRate: 28.00,
-        mrp: 42.00
-      }
-    ],
-    createdAt: '2026-01-15T10:15:00Z',
-    updatedAt: '2026-02-18T10:00:00Z'
-  },
-  {
-    id: 'prod_003',
-    name: 'Aachi Coriander Powder',
-    tamilName: 'ஆச்சி மல்லித் தூள்',
-    sku: 'AACHI-COR-100G',
-    barcode: '8901725101039',
-    category: 'Pure Spices',
-    brand: 'Aachi Masala',
-    packSize: '100g',
-    unitOfMeasure: 'PKT',
-    caseSize: 60,
-    purchaseRate: 31.00,
-    mrp: 46.00,
-    sellingPriceWholesale: 37.50,
-    sellingPriceRetail: 42.00,
-    gstPercent: 5,
-    hsnCode: '0910',
-    reorderLevel: 45,
-    stockOnHand: 280,
-    stockReserved: 20,
-    availableStock: 260,
-    imageUrl: 'https://images.unsplash.com/photo-1599909682664-98c5eeeb41b0?auto=format&fit=crop&w=400&q=80',
-    isActive: true,
-    batches: [
-      {
-        id: 'bat_cor_01',
-        batchNumber: 'B-COR-2601',
-        mfgDate: '2026-01-12',
-        expDate: '2027-01-11',
-        quantity: 280,
-        reservedQuantity: 20,
-        purchaseRate: 31.00,
-        mrp: 46.00
-      }
-    ],
-    createdAt: '2026-01-15T10:30:00Z',
-    updatedAt: '2026-02-15T14:00:00Z'
-  },
-  {
-    id: 'prod_004',
-    name: 'Aachi Chicken Masala',
-    tamilName: 'ஆச்சி சிக்கன் மசாலா',
-    sku: 'AACHI-CHK-100G',
-    barcode: '8901725201012',
-    category: 'Blended Masalas',
-    brand: 'Aachi Masala',
-    packSize: '100g',
-    unitOfMeasure: 'PKT',
-    caseSize: 50,
-    purchaseRate: 41.00,
-    mrp: 60.00,
-    sellingPriceWholesale: 49.00,
-    sellingPriceRetail: 54.00,
-    gstPercent: 5,
-    hsnCode: '2103',
-    reorderLevel: 60,
-    stockOnHand: 520,
-    stockReserved: 60,
-    availableStock: 460,
-    imageUrl: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=400&q=80',
-    isActive: true,
-    batches: [
-      {
-        id: 'bat_chk_01',
-        batchNumber: 'B-CHK-2601',
-        mfgDate: '2026-01-15',
-        expDate: '2027-01-14',
-        quantity: 520,
-        reservedQuantity: 60,
-        purchaseRate: 41.00,
-        mrp: 60.00
-      }
-    ],
-    createdAt: '2026-01-15T11:00:00Z',
-    updatedAt: '2026-02-21T09:30:00Z'
-  },
-  {
-    id: 'prod_005',
-    name: 'Aachi Mutton Masala',
-    tamilName: 'ஆச்சி மட்டன் மசாலா',
-    sku: 'AACHI-MUT-100G',
-    barcode: '8901725201029',
-    category: 'Blended Masalas',
-    brand: 'Aachi Masala',
-    packSize: '100g',
-    unitOfMeasure: 'PKT',
-    caseSize: 50,
-    purchaseRate: 43.50,
-    mrp: 65.00,
-    sellingPriceWholesale: 52.00,
-    sellingPriceRetail: 58.00,
-    gstPercent: 5,
-    hsnCode: '2103',
-    reorderLevel: 50,
-    stockOnHand: 310,
-    stockReserved: 25,
-    availableStock: 285,
-    imageUrl: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=400&q=80',
-    isActive: true,
-    batches: [
-      {
-        id: 'bat_mut_01',
-        batchNumber: 'B-MUT-2601',
-        mfgDate: '2026-01-20',
-        expDate: '2027-01-19',
-        quantity: 310,
-        reservedQuantity: 25,
-        purchaseRate: 43.50,
-        mrp: 65.00
-      }
-    ],
-    createdAt: '2026-01-15T11:15:00Z',
-    updatedAt: '2026-02-19T11:00:00Z'
-  },
-  {
-    id: 'prod_006',
-    name: 'Aachi Sambar Powder',
-    tamilName: 'ஆச்சி சாம்பார் பொடி',
-    sku: 'AACHI-SAM-100G',
-    barcode: '8901725201036',
-    category: 'Blended Masalas',
-    brand: 'Aachi Masala',
-    packSize: '100g',
-    unitOfMeasure: 'PKT',
-    caseSize: 60,
-    purchaseRate: 35.00,
-    mrp: 50.00,
-    sellingPriceWholesale: 41.50,
-    sellingPriceRetail: 46.00,
-    gstPercent: 5,
-    hsnCode: '2103',
-    reorderLevel: 50,
-    stockOnHand: 390,
-    stockReserved: 30,
-    availableStock: 360,
-    imageUrl: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=400&q=80',
-    isActive: true,
-    batches: [
-      {
-        id: 'bat_sam_01',
-        batchNumber: 'B-SAM-2601',
-        mfgDate: '2026-01-18',
-        expDate: '2027-01-17',
-        quantity: 390,
-        reservedQuantity: 30,
-        purchaseRate: 35.00,
-        mrp: 50.00
-      }
-    ],
-    createdAt: '2026-01-15T11:30:00Z',
-    updatedAt: '2026-02-22T15:00:00Z'
-  },
-  {
-    id: 'prod_007',
-    name: 'Aachi Kulambu Chilli Powder',
-    tamilName: 'ஆச்சி குழம்பு மிளகாய் தூள்',
-    sku: 'AACHI-KLB-200G',
-    barcode: '8901725201043',
-    category: 'Blended Masalas',
-    brand: 'Aachi Masala',
-    packSize: '200g',
-    unitOfMeasure: 'PKT',
-    caseSize: 40,
-    purchaseRate: 72.00,
-    mrp: 105.00,
-    sellingPriceWholesale: 86.00,
-    sellingPriceRetail: 94.00,
-    gstPercent: 5,
-    hsnCode: '2103',
-    reorderLevel: 30,
-    stockOnHand: 180,
-    stockReserved: 15,
-    availableStock: 165,
-    imageUrl: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=400&q=80',
-    isActive: true,
-    batches: [
-      {
-        id: 'bat_klb_01',
-        batchNumber: 'B-KLB-2601',
-        mfgDate: '2026-01-22',
-        expDate: '2027-01-21',
-        quantity: 180,
-        reservedQuantity: 15,
-        purchaseRate: 72.00,
-        mrp: 105.00
-      }
-    ],
-    createdAt: '2026-01-15T11:45:00Z',
-    updatedAt: '2026-02-20T16:00:00Z'
-  },
-  {
-    id: 'prod_008',
-    name: 'Aachi Biryani Masala',
-    tamilName: 'ஆச்சி பிரியாணி மசாலா',
-    sku: 'AACHI-BIR-50G',
-    barcode: '8901725201050',
-    category: 'Blended Masalas',
-    brand: 'Aachi Masala',
-    packSize: '50g',
-    unitOfMeasure: 'PKT',
-    caseSize: 60,
-    purchaseRate: 26.00,
-    mrp: 38.00,
-    sellingPriceWholesale: 31.00,
-    sellingPriceRetail: 34.00,
-    gstPercent: 5,
-    hsnCode: '2103',
-    reorderLevel: 40,
-    stockOnHand: 410,
-    stockReserved: 20,
-    availableStock: 390,
-    imageUrl: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=400&q=80',
-    isActive: true,
-    batches: [
-      {
-        id: 'bat_bir_01',
-        batchNumber: 'B-BIR-2601',
-        mfgDate: '2026-01-25',
-        expDate: '2027-01-24',
-        quantity: 410,
-        reservedQuantity: 20,
-        purchaseRate: 26.00,
-        mrp: 38.00
-      }
-    ],
-    createdAt: '2026-01-15T12:00:00Z',
-    updatedAt: '2026-02-23T10:00:00Z'
-  },
-  {
-    id: 'prod_009',
-    name: 'Aachi Ginger Garlic Paste',
-    tamilName: 'ஆச்சி இஞ்சி பூண்டு விழுது',
-    sku: 'AACHI-GGP-100G',
-    barcode: '8901725301019',
-    category: 'Paste & Ready Mixes',
-    brand: 'Aachi Masala',
-    packSize: '100g',
-    unitOfMeasure: 'PKT',
-    caseSize: 50,
-    purchaseRate: 19.50,
-    mrp: 30.00,
-    sellingPriceWholesale: 24.00,
-    sellingPriceRetail: 27.00,
-    gstPercent: 12,
-    hsnCode: '2103',
-    reorderLevel: 50,
-    stockOnHand: 290,
-    stockReserved: 20,
-    availableStock: 270,
-    imageUrl: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=400&q=80',
-    isActive: true,
-    batches: [
-      {
-        id: 'bat_ggp_01',
-        batchNumber: 'B-GGP-2601',
-        mfgDate: '2026-02-01',
-        expDate: '2026-08-01',
-        quantity: 290,
-        reservedQuantity: 20,
-        purchaseRate: 19.50,
-        mrp: 30.00
-      }
-    ],
-    createdAt: '2026-01-15T12:15:00Z',
-    updatedAt: '2026-02-21T14:00:00Z'
-  },
-  {
-    id: 'prod_010',
-    name: 'Aachi Lime Pickle',
-    tamilName: 'ஆச்சி எலுமிச்சை ஊறுகாய்',
-    sku: 'AACHI-LMP-300G',
-    barcode: '8901725401016',
-    category: 'Pickles & Condiments',
-    brand: 'Aachi Masala',
-    packSize: '300g',
-    unitOfMeasure: 'BOX',
-    caseSize: 24,
-    purchaseRate: 58.00,
-    mrp: 85.00,
-    sellingPriceWholesale: 69.00,
-    sellingPriceRetail: 76.00,
-    gstPercent: 12,
-    hsnCode: '2001',
-    reorderLevel: 25,
-    stockOnHand: 140,
-    stockReserved: 10,
-    availableStock: 130,
-    imageUrl: 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=400&q=80',
-    isActive: true,
-    batches: [
-      {
-        id: 'bat_lmp_01',
-        batchNumber: 'B-LMP-2601',
-        mfgDate: '2026-01-10',
-        expDate: '2027-01-09',
-        quantity: 140,
-        reservedQuantity: 10,
-        purchaseRate: 58.00,
-        mrp: 85.00
-      }
-    ],
-    createdAt: '2026-01-15T12:30:00Z',
-    updatedAt: '2026-02-22T08:00:00Z'
-  }
-];
-
-export const INITIAL_ACCOUNTS: Account[] = [
+/**
+ * Standard Double-Entry Accounting Chart of Accounts
+ * All initial balances start strictly at 0.00 until entered by the owner.
+ */
+export const CLEAN_ACCOUNTS: Account[] = [
   // ASSETS
   {
     id: 'acc_cash_01',
@@ -619,9 +79,9 @@ export const INITIAL_ACCOUNTS: Account[] = [
     name: 'Cash in Hand (Main Counter)',
     type: 'ASSET',
     subGroup: 'CASH_IN_HAND',
-    openingBalance: 42500,
+    openingBalance: 0,
     openingBalanceType: 'DR',
-    currentBalance: 42500,
+    currentBalance: 0,
     currentBalanceType: 'DR',
     isSystem: true,
     isActive: true
@@ -629,12 +89,12 @@ export const INITIAL_ACCOUNTS: Account[] = [
   {
     id: 'acc_cash_petty',
     code: '1015',
-    name: 'Petty Cash (Driver & Delivery Imprest)',
+    name: 'Petty Cash Account',
     type: 'ASSET',
     subGroup: 'CASH_IN_HAND',
-    openingBalance: 5000,
+    openingBalance: 0,
     openingBalanceType: 'DR',
-    currentBalance: 5000,
+    currentBalance: 0,
     currentBalanceType: 'DR',
     isSystem: true,
     isActive: true
@@ -642,25 +102,12 @@ export const INITIAL_ACCOUNTS: Account[] = [
   {
     id: 'acc_bank_tmb',
     code: '1020',
-    name: 'Tamilnad Mercantile Bank (TMB - Current A/c 5081920)',
+    name: 'Primary Bank Account',
     type: 'ASSET',
     subGroup: 'BANK_ACCOUNTS',
-    openingBalance: 312500,
+    openingBalance: 0,
     openingBalanceType: 'DR',
-    currentBalance: 312500,
-    currentBalanceType: 'DR',
-    isSystem: true,
-    isActive: true
-  },
-  {
-    id: 'acc_bank_sbi',
-    code: '1025',
-    name: 'State Bank of India (SBI - Current A/c 398112)',
-    type: 'ASSET',
-    subGroup: 'BANK_ACCOUNTS',
-    openingBalance: 145000,
-    openingBalanceType: 'DR',
-    currentBalance: 145000,
+    currentBalance: 0,
     currentBalanceType: 'DR',
     isSystem: true,
     isActive: true
@@ -668,12 +115,12 @@ export const INITIAL_ACCOUNTS: Account[] = [
   {
     id: 'acc_sundry_debtors',
     code: '1030',
-    name: 'Sundry Debtors (Retailer Receivables)',
+    name: 'Sundry Debtors (Customer Receivables)',
     type: 'ASSET',
     subGroup: 'SUNDRY_DEBTORS',
-    openingBalance: 51550,
+    openingBalance: 0,
     openingBalanceType: 'DR',
-    currentBalance: 51550,
+    currentBalance: 0,
     currentBalanceType: 'DR',
     isSystem: true,
     isActive: true
@@ -684,9 +131,9 @@ export const INITIAL_ACCOUNTS: Account[] = [
     name: 'Stock-in-Hand (Inventory Asset)',
     type: 'ASSET',
     subGroup: 'INVENTORY_STOCK',
-    openingBalance: 108420,
+    openingBalance: 0,
     openingBalanceType: 'DR',
-    currentBalance: 108420,
+    currentBalance: 0,
     currentBalanceType: 'DR',
     isSystem: true,
     isActive: true
@@ -694,12 +141,12 @@ export const INITIAL_ACCOUNTS: Account[] = [
   {
     id: 'acc_input_gst',
     code: '1050',
-    name: 'Input Tax Credit (ITC - GST Paid on Purchases)',
+    name: 'Input Tax Credit (ITC - CGST & SGST)',
     type: 'ASSET',
     subGroup: 'DUTIES_AND_TAXES',
-    openingBalance: 9800,
+    openingBalance: 0,
     openingBalanceType: 'DR',
-    currentBalance: 9800,
+    currentBalance: 0,
     currentBalanceType: 'DR',
     isSystem: true,
     isActive: true
@@ -708,12 +155,12 @@ export const INITIAL_ACCOUNTS: Account[] = [
   {
     id: 'acc_sundry_creditors',
     code: '2010',
-    name: 'Sundry Creditors (Aachi Masala C&F / Suppliers)',
+    name: 'Sundry Creditors (Supplier Payables)',
     type: 'LIABILITY',
     subGroup: 'SUNDRY_CREDITORS',
-    openingBalance: 277400,
+    openingBalance: 0,
     openingBalanceType: 'CR',
-    currentBalance: 277400,
+    currentBalance: 0,
     currentBalanceType: 'CR',
     isSystem: true,
     isActive: true
@@ -721,12 +168,12 @@ export const INITIAL_ACCOUNTS: Account[] = [
   {
     id: 'acc_output_gst',
     code: '2020',
-    name: 'Output GST Payable (Tax Collected on Sales)',
+    name: 'Output GST Payable',
     type: 'LIABILITY',
     subGroup: 'DUTIES_AND_TAXES',
-    openingBalance: 14600,
+    openingBalance: 0,
     openingBalanceType: 'CR',
-    currentBalance: 14600,
+    currentBalance: 0,
     currentBalanceType: 'CR',
     isSystem: true,
     isActive: true
@@ -735,12 +182,12 @@ export const INITIAL_ACCOUNTS: Account[] = [
   {
     id: 'acc_proprietor_capital',
     code: '3010',
-    name: "Proprietor's Capital Account (Kesavan K.)",
+    name: "Proprietor's Capital Account",
     type: 'EQUITY',
     subGroup: 'CAPITAL_ACCOUNT',
-    openingBalance: 350000,
+    openingBalance: 0,
     openingBalanceType: 'CR',
-    currentBalance: 350000,
+    currentBalance: 0,
     currentBalanceType: 'CR',
     isSystem: true,
     isActive: true
@@ -748,21 +195,21 @@ export const INITIAL_ACCOUNTS: Account[] = [
   {
     id: 'acc_retained_earnings',
     code: '3020',
-    name: 'Retained Earnings / General Reserves',
+    name: 'Retained Earnings',
     type: 'EQUITY',
     subGroup: 'RETAINED_EARNINGS',
-    openingBalance: 32770,
+    openingBalance: 0,
     openingBalanceType: 'CR',
-    currentBalance: 32770,
+    currentBalance: 0,
     currentBalanceType: 'CR',
     isSystem: true,
     isActive: true
   },
-  // INCOME
+  // REVENUE
   {
     id: 'acc_sales_revenue',
     code: '4010',
-    name: 'Sales Revenue - Aachi Products',
+    name: 'Sales Revenue',
     type: 'INCOME',
     subGroup: 'SALES_ACCOUNTS',
     openingBalance: 0,
@@ -776,7 +223,7 @@ export const INITIAL_ACCOUNTS: Account[] = [
   {
     id: 'acc_purchases',
     code: '5010',
-    name: 'Purchases - Aachi Masala Stocks',
+    name: 'Purchases & Cost of Goods Sold',
     type: 'EXPENSE',
     subGroup: 'PURCHASE_ACCOUNTS',
     openingBalance: 0,
@@ -802,7 +249,7 @@ export const INITIAL_ACCOUNTS: Account[] = [
   {
     id: 'acc_vehicle_fuel',
     code: '5030',
-    name: 'Delivery Van Fuel & Maintenance',
+    name: 'Vehicle Fuel & Delivery Expenses',
     type: 'EXPENSE',
     subGroup: 'INDIRECT_EXPENSES',
     openingBalance: 0,
@@ -828,7 +275,7 @@ export const INITIAL_ACCOUNTS: Account[] = [
   {
     id: 'acc_rent_utilities',
     code: '5050',
-    name: 'Warehouse Godown Rent & Electricity',
+    name: 'Rent, Utilities & Godown Expenses',
     type: 'EXPENSE',
     subGroup: 'INDIRECT_EXPENSES',
     openingBalance: 0,
@@ -840,227 +287,12 @@ export const INITIAL_ACCOUNTS: Account[] = [
   }
 ];
 
-export const INITIAL_BANK_ACCOUNTS: BankAccount[] = [
-  {
-    id: 'bank_tmb',
-    bankName: 'Tamilnad Mercantile Bank (TMB)',
-    branch: 'Beach Road Main Branch, Thoothukudi',
-    accountNumber: '00410005081920',
-    accountType: 'CURRENT',
-    ifscCode: 'TMBL0000004',
-    openingBalance: 312500,
-    currentBookBalance: 312500,
-    glAccountId: 'acc_bank_tmb',
-    isActive: true
-  },
-  {
-    id: 'bank_sbi',
-    bankName: 'State Bank of India (SBI)',
-    branch: 'Millerpuram SME Branch, Thoothukudi',
-    accountNumber: '39811244550',
-    accountType: 'CURRENT',
-    ifscCode: 'SBIN0001234',
-    openingBalance: 145000,
-    currentBookBalance: 145000,
-    glAccountId: 'acc_bank_sbi',
-    isActive: true
-  }
-];
-
-export const INITIAL_ORDERS: SalesOrder[] = [
-  {
-    id: 'ord_1001',
-    orderNumber: 'K7-SO-2026-0081',
-    retailerId: 'ret_001',
-    retailerShopName: 'Selvam Super Store & Provisions',
-    retailerOwnerName: 'M. Selvam',
-    retailerPhone: '9442088190',
-    deliveryAddress: '45, 3rd Street, Bryant Nagar, Thoothukudi',
-    area: 'Bryant Nagar',
-    orderDate: '2026-02-24T10:15:00Z',
-    expectedDeliveryDate: '2026-02-25',
-    salesRepId: 'usr_sales_01',
-    salesRepName: 'Ramesh Kumar',
-    assignedDeliveryPersonId: 'usr_delivery_01',
-    assignedDeliveryPersonName: 'Murugan P.',
-    items: [
-      {
-        productId: 'prod_001',
-        productName: 'Aachi Chilli Powder',
-        sku: 'AACHI-CHL-100G',
-        packSize: '100g',
-        quantity: 30,
-        unitPrice: 43.50,
-        mrp: 52.00,
-        discountPercent: 2,
-        discountAmount: 26.10,
-        taxableAmount: 1278.90,
-        gstPercent: 5,
-        gstAmount: 63.95,
-        totalAmount: 1342.85,
-        allocatedBatchNumber: 'B-CHL-2601'
-      },
-      {
-        productId: 'prod_004',
-        productName: 'Aachi Chicken Masala',
-        sku: 'AACHI-CHK-100G',
-        packSize: '100g',
-        quantity: 40,
-        unitPrice: 49.00,
-        mrp: 60.00,
-        discountPercent: 2,
-        discountAmount: 39.20,
-        taxableAmount: 1920.80,
-        gstPercent: 5,
-        gstAmount: 96.04,
-        totalAmount: 2016.84,
-        allocatedBatchNumber: 'B-CHK-2601'
-      }
-    ],
-    subTotal: 3265.00,
-    totalDiscount: 65.30,
-    taxableSubtotal: 3199.70,
-    totalGst: 159.99,
-    deliveryFee: 0,
-    roundOff: 0.31,
-    grandTotal: 3360.00,
-    paymentMethod: 'CREDIT',
-    paymentStatus: 'PENDING',
-    paidAmount: 0,
-    dueAmount: 3360.00,
-    currentStage: 'PACKING_IN_PROGRESS',
-    stageHistory: [
-      {
-        stage: 'ORDER_PLACED',
-        timestamp: '2026-02-24T10:15:00Z',
-        updatedByUserId: 'usr_sales_01',
-        updatedByUserName: 'Ramesh Kumar',
-        notes: 'Placed via Sales App'
-      },
-      {
-        stage: 'ACCEPTED',
-        timestamp: '2026-02-24T10:30:00Z',
-        updatedByUserId: 'usr_ops_01',
-        updatedByUserName: 'Senthil Nathan',
-        notes: 'Credit approved within ₹50,000 limit'
-      },
-      {
-        stage: 'STOCK_ALLOCATED',
-        timestamp: '2026-02-24T10:35:00Z',
-        updatedByUserId: 'usr_ops_01',
-        updatedByUserName: 'Senthil Nathan',
-        notes: 'FEFO stock allocated from warehouse godown'
-      },
-      {
-        stage: 'PACKING_IN_PROGRESS',
-        timestamp: '2026-02-24T11:00:00Z',
-        updatedByUserId: 'usr_ops_01',
-        updatedByUserName: 'Senthil Nathan',
-        notes: 'Carton boxing in progress'
-      }
-    ],
-    invoiceId: 'inv_1001',
-    invoiceNumber: 'K7/INV/26-27/0091',
-    createdAt: '2026-02-24T10:15:00Z',
-    updatedAt: '2026-02-24T11:00:00Z'
-  },
-  {
-    id: 'ord_1002',
-    orderNumber: 'K7-SO-2026-0082',
-    retailerId: 'ret_002',
-    retailerShopName: 'Sri Murugan Maligai',
-    retailerOwnerName: 'K. Shanmugavel',
-    retailerPhone: '9842577610',
-    deliveryAddress: '12-A, Millerpuram Main Road, Thoothukudi',
-    area: 'Millerpuram',
-    orderDate: '2026-02-24T11:20:00Z',
-    expectedDeliveryDate: '2026-02-25',
-    salesRepId: 'usr_sales_01',
-    salesRepName: 'Ramesh Kumar',
-    assignedDeliveryPersonId: 'usr_delivery_01',
-    assignedDeliveryPersonName: 'Murugan P.',
-    items: [
-      {
-        productId: 'prod_005',
-        productName: 'Aachi Mutton Masala',
-        sku: 'AACHI-MUT-100G',
-        packSize: '100g',
-        quantity: 25,
-        unitPrice: 52.00,
-        mrp: 65.00,
-        discountPercent: 0,
-        discountAmount: 0,
-        taxableAmount: 1300.00,
-        gstPercent: 5,
-        gstAmount: 65.00,
-        totalAmount: 1365.00,
-        allocatedBatchNumber: 'B-MUT-2601'
-      },
-      {
-        productId: 'prod_008',
-        productName: 'Aachi Biryani Masala',
-        sku: 'AACHI-BIR-50G',
-        packSize: '50g',
-        quantity: 20,
-        unitPrice: 31.00,
-        mrp: 38.00,
-        discountPercent: 0,
-        discountAmount: 0,
-        taxableAmount: 620.00,
-        gstPercent: 5,
-        gstAmount: 31.00,
-        totalAmount: 651.00,
-        allocatedBatchNumber: 'B-BIR-2601'
-      }
-    ],
-    subTotal: 1920.00,
-    totalDiscount: 0,
-    taxableSubtotal: 1920.00,
-    totalGst: 96.00,
-    deliveryFee: 0,
-    roundOff: 0.00,
-    grandTotal: 2016.00,
-    paymentMethod: 'UPI',
-    paymentStatus: 'PAID',
-    paidAmount: 2016.00,
-    dueAmount: 0,
-    currentStage: 'DISPATCHED',
-    stageHistory: [
-      {
-        stage: 'ORDER_PLACED',
-        timestamp: '2026-02-24T11:20:00Z',
-        updatedByUserId: 'usr_sales_01',
-        updatedByUserName: 'Ramesh Kumar'
-      },
-      {
-        stage: 'ACCEPTED',
-        timestamp: '2026-02-24T11:30:00Z',
-        updatedByUserId: 'usr_ops_01',
-        updatedByUserName: 'Senthil Nathan'
-      },
-      {
-        stage: 'STOCK_ALLOCATED',
-        timestamp: '2026-02-24T11:35:00Z',
-        updatedByUserId: 'usr_ops_01',
-        updatedByUserName: 'Senthil Nathan'
-      },
-      {
-        stage: 'READY_FOR_DISPATCH',
-        timestamp: '2026-02-24T12:00:00Z',
-        updatedByUserId: 'usr_ops_01',
-        updatedByUserName: 'Senthil Nathan'
-      },
-      {
-        stage: 'DISPATCHED',
-        timestamp: '2026-02-24T13:00:00Z',
-        updatedByUserId: 'usr_delivery_01',
-        updatedByUserName: 'Murugan P.',
-        notes: 'Loaded onto Delivery Van TN-69-AA-2341'
-      }
-    ],
-    invoiceId: 'inv_1002',
-    invoiceNumber: 'K7/INV/26-27/0092',
-    createdAt: '2026-02-24T11:20:00Z',
-    updatedAt: '2026-02-24T13:00:00Z'
-  }
-];
+// Aliases for seamless backward compatibility
+export const INITIAL_BUSINESS_SETTINGS = CLEAN_BUSINESS_SETTINGS;
+export const INITIAL_USERS = CLEAN_USERS;
+export const INITIAL_PRODUCTS = CLEAN_PRODUCTS;
+export const INITIAL_RETAILERS = CLEAN_RETAILERS;
+export const INITIAL_SUPPLIERS = CLEAN_SUPPLIERS;
+export const INITIAL_ORDERS = CLEAN_ORDERS;
+export const INITIAL_ACCOUNTS = CLEAN_ACCOUNTS;
+export const INITIAL_BANK_ACCOUNTS = CLEAN_BANK_ACCOUNTS;

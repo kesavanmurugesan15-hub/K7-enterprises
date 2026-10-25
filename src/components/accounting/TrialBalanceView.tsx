@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useBusiness } from '../../context/BusinessContext';
 import { dataService } from '../../services/dataService';
 import type { TrialBalanceReport } from '../../types/accounting';
 import { formatINR } from '../../utils/currency';
@@ -9,6 +10,7 @@ import { Badge } from '../common/Badge';
 import { Scale, Download, Printer, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 export const TrialBalanceView: React.FC = () => {
+  const { settings } = useBusiness();
   const [report, setReport] = useState<TrialBalanceReport>(dataService.getTrialBalance());
 
   useEffect(() => {
@@ -99,8 +101,8 @@ export const TrialBalanceView: React.FC = () => {
       <div id="printable-trial-balance" className="bg-surface border border-divider rounded-lg shadow-enterprise overflow-hidden">
         <div className="p-4 border-b border-divider bg-slate-50 flex items-center justify-between print-only">
           <div>
-            <h3 className="font-bold text-base text-ink-primary">K7 Enterprise — Trial Balance</h3>
-            <p className="text-xs text-ink-secondary">Thoothukudi Hub • FY 2026-27</p>
+            <h3 className="font-bold text-base text-ink-primary">{settings.businessName || 'K7 Enterprise'} — Trial Balance</h3>
+            <p className="text-xs text-ink-secondary">{settings.city || settings.district || 'Distribution Hub'} • FY {settings.financialYear || '2026-27'}</p>
           </div>
           <span className="text-xs text-ink-muted">As of: {formatDateTime(report.generatedAt)}</span>
         </div>

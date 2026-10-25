@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useBusiness } from '../../context/BusinessContext';
 import { dataService } from '../../services/dataService';
 import type { UserProfile, UserRole, Retailer } from '../../types/auth';
 import { Button } from '../common/Button';
@@ -10,6 +11,7 @@ import { Plus, UserPlus, Store, Shield, Phone, Mail, MapPin, KeyRound, Check, X,
 
 export const UserManagement: React.FC = () => {
   const { currentUser } = useAuth();
+  const { settings } = useBusiness();
   const [users, setUsers] = useState<UserProfile[]>(dataService.getUsers());
   const [retailers, setRetailers] = useState<Retailer[]>(dataService.getRetailers());
   const [activeTab, setActiveTab] = useState<'employees' | 'retailers'>('employees');
@@ -37,8 +39,8 @@ export const UserManagement: React.FC = () => {
     email: '',
     address: '',
     area: '',
-    city: 'Thoothukudi',
-    pincode: '628002',
+    city: settings.city || '',
+    pincode: settings.pincode || '',
     gstin: '',
     creditLimit: 50000,
     creditDays: 14,
@@ -67,8 +69,8 @@ export const UserManagement: React.FC = () => {
       email: userFormData.email || `${userFormData.phone}@k7enterprise.in`,
       phone: userFormData.phone!,
       role: (userFormData.role as UserRole) || 'sales_rep',
-      businessId: 'biz_k7_thoothukudi',
-      businessName: 'K7 Enterprise',
+      businessId: settings.id || 'biz_default',
+      businessName: settings.businessName || 'K7 Enterprise',
       isActive: userFormData.isActive ?? true,
       createdAt: userFormData.createdAt || new Date().toISOString()
     };
@@ -95,9 +97,9 @@ export const UserManagement: React.FC = () => {
       phone: retailerFormData.phone!,
       email: retailerFormData.email,
       address: retailerFormData.address || '',
-      area: retailerFormData.area || 'Thoothukudi Town',
-      city: retailerFormData.city || 'Thoothukudi',
-      pincode: retailerFormData.pincode || '628002',
+      area: retailerFormData.area || settings.city || 'Town',
+      city: retailerFormData.city || settings.city || '',
+      pincode: retailerFormData.pincode || settings.pincode || '',
       gstin: retailerFormData.gstin,
       creditLimit: Number(retailerFormData.creditLimit || 50000),
       creditDays: Number(retailerFormData.creditDays || 14),
@@ -118,8 +120,8 @@ export const UserManagement: React.FC = () => {
       email: '',
       address: '',
       area: '',
-      city: 'Thoothukudi',
-      pincode: '628002',
+      city: settings.city || '',
+      pincode: settings.pincode || '',
       gstin: '',
       creditLimit: 50000,
       creditDays: 14,

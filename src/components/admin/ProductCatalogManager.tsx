@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useBusiness } from '../../context/BusinessContext';
 import { dataService } from '../../services/dataService';
 import type { Product, ProductCategory, ProductBatch } from '../../types/product';
 import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
 import { Badge } from '../common/Badge';
 import { formatINR } from '../../utils/currency';
-import { Plus, Upload, Image as ImageIcon, Search, Tag, AlertCircle, Trash2, Edit2, CheckCircle2, Archive } from 'lucide-react';
+import { Plus, Upload, Image as ImageIcon, Search, Tag, AlertCircle, Trash2, Edit2, CheckCircle2, Archive, Package } from 'lucide-react';
 
 export const ProductCatalogManager: React.FC = () => {
   const { currentUser } = useAuth();
+  const { settings } = useBusiness();
   const [products, setProducts] = useState<Product[]>(dataService.getProducts());
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -44,20 +46,20 @@ export const ProductCatalogManager: React.FC = () => {
       sku: '',
       barcode: '',
       category: 'Blended Masalas',
-      brand: 'Aachi Masala',
+      brand: settings.businessName || '',
       packSize: '100g',
       unitOfMeasure: 'PKT',
       caseSize: 50,
-      purchaseRate: 35.00,
-      mrp: 50.00,
-      sellingPriceWholesale: 42.00,
-      sellingPriceRetail: 46.00,
+      purchaseRate: 0,
+      mrp: 0,
+      sellingPriceWholesale: 0,
+      sellingPriceRetail: 0,
       gstPercent: 5,
       hsnCode: '2103',
-      reorderLevel: 40,
-      stockOnHand: 100,
+      reorderLevel: 20,
+      stockOnHand: 0,
       stockReserved: 0,
-      availableStock: 100,
+      availableStock: 0,
       description: '',
       isActive: true,
       isArchived: false,
@@ -128,7 +130,7 @@ export const ProductCatalogManager: React.FC = () => {
       sku: editingProduct.sku,
       barcode: editingProduct.barcode || '',
       category: editingProduct.category as ProductCategory,
-      brand: editingProduct.brand || 'Aachi Masala',
+      brand: editingProduct.brand || settings.businessName || '',
       packSize: editingProduct.packSize || '100g',
       unitOfMeasure: editingProduct.unitOfMeasure || 'PKT',
       caseSize: Number(editingProduct.caseSize || 50),
@@ -178,12 +180,12 @@ export const ProductCatalogManager: React.FC = () => {
         <div>
           <h2 className="text-lg font-bold text-ink-primary">Product Catalogue & Price Management</h2>
           <p className="text-xs text-ink-secondary mt-0.5">
-            Aachi Masala official product listings, wholesale/retail rates, GST/HSN, and live image assets.
+            Manage your distributor product listings, wholesale/retail rate tiers, GST/HSN codes, and live image assets.
           </p>
         </div>
 
         <Button variant="primary" size="sm" icon={Plus} onClick={handleOpenAddModal}>
-          Add Aachi Product
+          Add Product
         </Button>
       </div>
 
@@ -212,7 +214,7 @@ export const ProductCatalogManager: React.FC = () => {
           <Search className="w-3.5 h-3.5 text-ink-muted absolute left-3 top-2.5" />
           <input
             type="text"
-            placeholder="Search Aachi product, Tamil name, SKU..."
+            placeholder="Search product, Tamil name, SKU..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="w-full text-xs pl-8 pr-3 py-1.5 bg-surface border border-divider rounded-md focus:outline-none focus:border-brand"
@@ -238,7 +240,21 @@ export const ProductCatalogManager: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-divider/70 text-ink-primary">
-              {filteredProducts.map(prod => (
+              {filteredProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="py-12 text-center text-ink-muted">
+                    <Package className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                    <p className="font-semibold text-ink-primary text-xs">No products in catalogue</p>
+                    <p className="text-ink-secondary text-[11px] mt-1 mb-4">
+                      Add your products with wholesale rates, MRP, and GST tax codes.
+                    </p>
+                    <Button variant="primary" size="sm" icon={Plus} onClick={handleOpenAddModal}>
+                      Add First Product
+                    </Button>
+                  </td>
+                </tr>
+              ) : (
+                filteredProducts.map(prod => (
                 <tr key={prod.id} className="hover:bg-slate-50/80 transition-colors">
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
@@ -319,7 +335,7 @@ export const ProductCatalogManager: React.FC = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>
@@ -329,7 +345,7 @@ export const ProductCatalogManager: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingProduct?.id ? 'Edit Aachi Product' : 'Add New Product to Catalogue'}
+        title={editingProduct?.id ? 'Edit Product' : 'Add New Product to Catalogue'}
         subtitle="Manage product metadata, image asset, tiered pricing, and tax configuration"
         maxWidth="2xl"
       >
@@ -386,17 +402,17 @@ export const ProductCatalogManager: React.FC = () => {
                 value={editingProduct?.name || ''}
                 onChange={e => setEditingProduct({ ...editingProduct, name: e.target.value })}
                 className="w-full p-2 border border-divider rounded focus:border-brand focus:outline-none"
-                placeholder="e.g. Aachi Chicken Masala"
+                placeholder="e.g. Chilli Powder 100g"
               />
             </div>
             <div>
-              <label className="block font-semibold text-ink-primary mb-1">Tamil Name (Optional)</label>
+              <label className="block font-semibold text-ink-primary mb-1">Regional / Tamil Name (Optional)</label>
               <input
                 type="text"
                 value={editingProduct?.tamilName || ''}
                 onChange={e => setEditingProduct({ ...editingProduct, tamilName: e.target.value })}
                 className="w-full p-2 border border-divider rounded focus:border-brand focus:outline-none"
-                placeholder="e.g. ஆச்சி சிக்கன் மசாலா"
+                placeholder="e.g. மிளகாய் தூள்"
               />
             </div>
           </div>
@@ -409,7 +425,7 @@ export const ProductCatalogManager: React.FC = () => {
               value={editingProduct?.description || ''}
               onChange={e => setEditingProduct({ ...editingProduct, description: e.target.value })}
               className="w-full p-2 border border-divider rounded focus:border-brand focus:outline-none"
-              placeholder="e.g. Pure authentic ground red chilli powder with rich red colour and pungency. Official 3-layer laminated pack."
+              placeholder="e.g. Pure authentic ground red chilli powder with rich red colour and pungency."
             />
           </div>
 
@@ -423,7 +439,7 @@ export const ProductCatalogManager: React.FC = () => {
                 value={editingProduct?.sku || ''}
                 onChange={e => setEditingProduct({ ...editingProduct, sku: e.target.value })}
                 className="w-full p-2 border border-divider rounded focus:border-brand focus:outline-none font-mono"
-                placeholder="AACHI-CHK-100G"
+                placeholder="SKU-CHL-100G"
               />
             </div>
             <div>

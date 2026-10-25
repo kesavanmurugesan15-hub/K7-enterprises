@@ -17,7 +17,7 @@ interface ShoppingCartViewProps {
 
 export const ShoppingCartView: React.FC<ShoppingCartViewProps> = ({ onOrderPlaced, onContinueShopping }) => {
   const { currentUser, isRetailer, isSalesRep, isAdmin } = useAuth();
-  const { cart, updateCartQuantity, removeFromCart, clearCart, cartSubtotal, cartGstTotal, cartGrandTotal } = useBusiness();
+  const { cart, updateCartQuantity, removeFromCart, clearCart, cartSubtotal, cartGstTotal, cartGrandTotal, settings } = useBusiness();
   const [retailers] = useState<Retailer[]>(dataService.getRetailers());
 
   // If a retailer is logged in, use their profile, otherwise allow sales rep / admin to pick retailer
@@ -91,7 +91,7 @@ export const ShoppingCartView: React.FC<ShoppingCartViewProps> = ({ onOrderPlace
         </div>
         <h2 className="text-xl font-bold text-ink-primary">Order Placed Successfully!</h2>
         <p className="text-xs text-ink-secondary">
-          Order reference <span className="font-mono font-bold text-brand">{placedOrder.orderNumber}</span> has been transmitted to K7 Enterprise Thoothukudi distribution desk.
+          Order reference <span className="font-mono font-bold text-brand">{placedOrder.orderNumber}</span> has been transmitted to {settings.businessName || 'K7 Enterprise'} distribution desk.
         </p>
 
         <div className="bg-slate-50 border border-divider rounded-lg p-4 text-xs space-y-2 text-left">
@@ -135,7 +135,7 @@ export const ShoppingCartView: React.FC<ShoppingCartViewProps> = ({ onOrderPlace
         </div>
         <h3 className="text-base font-bold text-ink-primary">Your Shopping Cart is Empty</h3>
         <p className="text-xs text-ink-secondary">
-          Explore the official Aachi Masala product catalogue to add packets and cases to your wholesale order.
+          Explore the product catalogue to add packets and cases to your wholesale order.
         </p>
         <Button variant="primary" size="md" onClick={onContinueShopping}>
           Browse Products

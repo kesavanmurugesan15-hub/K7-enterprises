@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useBusiness } from '../../context/BusinessContext';
 import { dataService } from '../../services/dataService';
 import { StatCard } from '../common/StatCard';
 import { formatINR } from '../../utils/currency';
@@ -24,6 +25,7 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
+  const { settings } = useBusiness();
   const [orders, setOrders] = useState(dataService.getOrders());
   const [valuation, setValuation] = useState(dataService.getStockValuation());
   const [accounts, setAccounts] = useState(dataService.getAccounts());
@@ -60,15 +62,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
 
   return (
     <div className="space-y-6">
+      {/* First-Time Business Setup Banner */}
+      {(!settings.isConfigured || !settings.businessName) && (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 rounded-lg p-5 shadow-enterprise flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+              <h3 className="text-base font-bold text-amber-900">First-Time Setup: Configure Your Business Master Details</h3>
+            </div>
+            <p className="text-xs text-amber-800">
+              Welcome to K7 Enterprise. Configure your company name, GSTIN, bank accounts, and opening balance reconciliation to begin operations.
+            </p>
+          </div>
+          <button
+            onClick={() => onNavigate('settings')}
+            className="flex-shrink-0 text-xs font-semibold px-4 py-2 bg-amber-700 text-white rounded-md hover:bg-amber-800 shadow-sm transition-colors flex items-center gap-1.5"
+          >
+            <span>Configure Business Now</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Top Banner */}
       <div className="bg-surface border border-divider rounded-lg p-5 shadow-enterprise flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-ink-primary">K7 Enterprise Executive Command Centre</h2>
-            <Badge variant="brand">Aachi Distributor</Badge>
+            <h2 className="text-xl font-bold text-ink-primary">
+              {settings.businessName || 'K7 Enterprise'} Executive Command Centre
+            </h2>
+            <Badge variant="brand">{settings.subTitle || 'FMCG Distribution'}</Badge>
           </div>
           <p className="text-xs text-ink-secondary mt-1">
-            Real-time FMCG distribution, inventory valuation, and double-entry accounting overview for Thoothukudi territory.
+            Real-time FMCG distribution, inventory valuation, and double-entry accounting overview for {settings.city || settings.district || 'business operations'}.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -111,7 +137,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
         <StatCard
           title="Supplier Payables"
           value={formatINR(totalSupplierPayables)}
-          subtitle="Aachi Depot Sundry Creditors"
+          subtitle="Sundry Creditors (Suppliers)"
           icon={Building}
           accentColor="info"
           onClick={() => onNavigate('purchases')}
@@ -234,9 +260,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             <div className="p-3 rounded-md bg-emerald-50/70 border border-emerald-200 flex items-center justify-between">
               <div>
                 <p className="text-xs font-bold text-emerald-900">Active Catalogue</p>
-                <p className="text-[11px] text-emerald-800">{valuation.totalItems} Aachi spice & masala products</p>
+                <p className="text-[11px] text-emerald-800">{valuation.totalItems} active catalogue items</p>
               </div>
-              <Badge variant="success">100% In Stock</Badge>
+              <Badge variant={valuation.totalItems > 0 ? 'success' : 'neutral'}>
+                {valuation.totalItems > 0 ? 'In Stock' : 'Empty'}
+              </Badge>
             </div>
           </div>
         </div>
@@ -287,7 +315,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
         <div className="px-5 py-4 border-b border-divider flex items-center justify-between bg-surface">
           <div>
             <h3 className="text-sm font-semibold text-ink-primary">Live Distribution Orders</h3>
-            <p className="text-xs text-ink-secondary mt-0.5">Real-time orders across Thoothukudi retail network</p>
+            <p className="text-xs text-ink-secondary mt-0.5">Real-time orders across {settings.city || settings.district || 'commercial'} retail network</p>
           </div>
           <button
             onClick={() => onNavigate('orders')}
@@ -298,49 +326,65 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
           </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 border-b border-divider text-ink-secondary uppercase text-[10px] tracking-wider font-semibold">
-              <tr>
-                <th className="py-3 px-4">Order #</th>
-                <th className="py-3 px-4">Date</th>
-                <th className="py-3 px-4">Retailer Shop</th>
-                <th className="py-3 px-4">Area</th>
-                <th className="py-3 px-4 text-right">Grand Total</th>
-                <th className="py-3 px-4">Delivery Stage</th>
-                <th className="py-3 px-4">Payment</th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-divider/70 text-ink-primary">
-              {orders.slice(0, 6).map(order => (
-                <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="py-3 px-4 font-mono font-semibold text-brand">{order.orderNumber}</td>
-                  <td className="py-3 px-4 text-ink-secondary">{formatDateTime(order.orderDate)}</td>
-                  <td className="py-3 px-4 font-semibold">{order.retailerShopName}</td>
-                  <td className="py-3 px-4 text-ink-secondary">{order.area}</td>
-                  <td className="py-3 px-4 text-right font-bold text-num">{formatINR(order.grandTotal)}</td>
-                  <td className="py-3 px-4">
-                    <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-800 border border-slate-200">
-                      {order.currentStage.replace(/_/g, ' ')}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-[11px] font-medium">{order.paymentMethod}</span>
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <button
-                      onClick={() => onNavigate('orders')}
-                      className="text-brand hover:underline font-semibold"
-                    >
-                      View
-                    </button>
-                  </td>
+        {orders.length === 0 ? (
+          <div className="py-12 text-center text-ink-muted bg-slate-50/50">
+            <Package className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+            <p className="font-semibold text-ink-primary text-xs">No sales orders placed yet</p>
+            <p className="text-ink-secondary text-[11px] mt-1 mb-4">
+              Orders booked via the Wholesale Retailer Portal or Field Desk will appear here live.
+            </p>
+            <button
+              onClick={() => onNavigate('orders')}
+              className="px-3.5 py-1.5 bg-brand text-white rounded text-xs font-semibold hover:bg-brand-hover shadow-sm"
+            >
+              Open Orders Desk
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 border-b border-divider text-ink-secondary uppercase text-[10px] tracking-wider font-semibold">
+                <tr>
+                  <th className="py-3 px-4">Order #</th>
+                  <th className="py-3 px-4">Date</th>
+                  <th className="py-3 px-4">Retailer Shop</th>
+                  <th className="py-3 px-4">Area</th>
+                  <th className="py-3 px-4 text-right">Grand Total</th>
+                  <th className="py-3 px-4">Delivery Stage</th>
+                  <th className="py-3 px-4">Payment</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-divider/70 text-ink-primary">
+                {orders.slice(0, 6).map(order => (
+                  <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3 px-4 font-mono font-semibold text-brand">{order.orderNumber}</td>
+                    <td className="py-3 px-4 text-ink-secondary">{formatDateTime(order.orderDate)}</td>
+                    <td className="py-3 px-4 font-semibold">{order.retailerShopName}</td>
+                    <td className="py-3 px-4 text-ink-secondary">{order.area}</td>
+                    <td className="py-3 px-4 text-right font-bold text-num">{formatINR(order.grandTotal)}</td>
+                    <td className="py-3 px-4">
+                      <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-800 border border-slate-200">
+                        {order.currentStage.replace(/_/g, ' ')}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-[11px] font-medium">{order.paymentMethod}</span>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <button
+                        onClick={() => onNavigate('orders')}
+                        className="text-brand hover:underline font-semibold"
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

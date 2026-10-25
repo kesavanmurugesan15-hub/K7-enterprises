@@ -108,11 +108,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             K7
           </div>
           <div className="overflow-hidden">
-            <h1 className="text-sm font-bold tracking-tight text-ink-primary flex items-center gap-1.5">
-              <span>K7 ENTERPRISE</span>
+            <h1 className="text-sm font-bold tracking-tight text-ink-primary flex items-center gap-1.5 uppercase truncate">
+              <span>{settings.businessName || 'K7 ENTERPRISE'}</span>
             </h1>
             <p className="text-[10px] text-ink-secondary font-medium truncate">
-              Aachi Masala Distributor • Thoothukudi
+              {settings.subTitle || (settings.city ? `${settings.city} Hub` : 'FMCG Distribution & Accounting')}
             </p>
           </div>
         </div>

@@ -17,13 +17,13 @@ export const BankReconciliationView: React.FC = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Sample CSV statement generator/importer state
-  const [importFileName, setImportFileName] = useState('TMB_Statement_Thoothukudi_Feb2026.csv');
+  const [importFileName, setImportFileName] = useState('Bank_Statement_Import.csv');
   const [sampleTxLines, setSampleTxLines] = useState<string>(
-`2026-02-24,UPI/33819201827/SELVAM STORES,CR,3360.00,UTR-33819201827
-2026-02-24,UPI/33991209384/SRI MURUGAN MALIGAI,CR,2016.00,UTR-33991209384
-2026-02-23,CHQ/491021/AACHI MADURAI DEPOT,DR,85400.00,CHQ-491021
-2026-02-22,NEFT/INDIAN OIL BUNK DIESEL,DR,1200.00,UTR-IOC-9912
-2026-02-20,SMS CHARGES Q4 2025,DR,29.50,BNK-CHG-01`
+`2026-04-05,UPI/33819201827/RETAIL_STORE,CR,3360.00,UTR-33819201827
+2026-04-06,UPI/33991209384/SUPER_MARKET,CR,2016.00,UTR-33991209384
+2026-04-07,NEFT/491021/SUPPLIER_DEPOT,DR,85400.00,CHQ-491021
+2026-04-08,NEFT/VEHICLE_FUEL_EXPENSE,DR,1200.00,UTR-IOC-9912
+2026-04-09,BANK_CHARGES_Q1,DR,29.50,BNK-CHG-01`
   );
 
   useEffect(() => {
@@ -87,32 +87,42 @@ export const BankReconciliationView: React.FC = () => {
       </div>
 
       {/* Bank Account Selector Card */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {bankAccounts.map(bank => {
-          const isSelected = bank.id === selectedAccountId;
-          return (
-            <div
-              key={bank.id}
-              onClick={() => setSelectedAccountId(bank.id)}
-              className={`p-4 rounded-lg border bg-surface transition-all cursor-pointer shadow-enterprise ${
-                isSelected ? 'border-brand ring-2 ring-brand-100 bg-brand-50/20' : 'border-divider hover:border-slate-300'
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-bold text-sm text-ink-primary">{bank.bankName}</h3>
-                  <p className="text-xs text-ink-secondary">{bank.branch}</p>
-                  <p className="text-xs font-mono text-ink-muted mt-1">A/c: {bank.accountNumber} • IFSC: {bank.ifscCode}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-ink-secondary">Book Balance</p>
-                  <p className="text-lg font-bold font-mono text-brand">{formatINR(bank.currentBookBalance)}</p>
+      {bankAccounts.length === 0 ? (
+        <div className="py-10 text-center bg-surface rounded-lg border border-dashed border-divider">
+          <Landmark className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+          <p className="font-semibold text-ink-primary text-xs">No bank accounts configured yet</p>
+          <p className="text-[11px] text-ink-secondary mt-1">
+            Configure your commercial bank accounts in Business Settings to import statements and auto-reconcile transactions.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {bankAccounts.map(bank => {
+            const isSelected = bank.id === selectedAccountId;
+            return (
+              <div
+                key={bank.id}
+                onClick={() => setSelectedAccountId(bank.id)}
+                className={`p-4 rounded-lg border bg-surface transition-all cursor-pointer shadow-enterprise ${
+                  isSelected ? 'border-brand ring-2 ring-brand-100 bg-brand-50/20' : 'border-divider hover:border-slate-300'
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="font-bold text-sm text-ink-primary">{bank.bankName}</h3>
+                    <p className="text-xs text-ink-secondary">{bank.branch}</p>
+                    <p className="text-xs font-mono text-ink-muted mt-1">A/c: {bank.accountNumber} • IFSC: {bank.ifscCode}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-ink-secondary">Book Balance</p>
+                    <p className="text-lg font-bold font-mono text-brand">{formatINR(bank.currentBookBalance || bank.currentBalance || 0)}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Imported Statements & Reconciliation Status */}
       <div className="bg-surface border border-divider rounded-lg shadow-enterprise overflow-hidden">

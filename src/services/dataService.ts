@@ -38,6 +38,9 @@ class EnterpriseDataService {
   private listeners: Map<string, Set<Listener>> = new Map();
 
   // Storage keys
+  private readonly K_STORAGE_VERSION = 'k7_storage_version';
+  private readonly CURRENT_STORAGE_VERSION = '3.0_clean_setup';
+
   private readonly K_SETTINGS = 'k7_settings';
   private readonly K_USERS = 'k7_users';
   private readonly K_RETAILERS = 'k7_retailers';
@@ -103,7 +106,45 @@ class EnterpriseDataService {
     }
   }
 
+  /**
+   * Reset the entire application storage to a clean, production-ready zero state.
+   * Clears all demo transactions, products, orders, and balances.
+   */
+  public resetToCleanState(actor?: UserProfile) {
+    this.setItem(this.K_SETTINGS, INITIAL_BUSINESS_SETTINGS);
+    this.setItem(this.K_USERS, INITIAL_USERS);
+    this.setItem(this.K_RETAILERS, INITIAL_RETAILERS);
+    this.setItem(this.K_SUPPLIERS, INITIAL_SUPPLIERS);
+    this.setItem(this.K_PRODUCTS, INITIAL_PRODUCTS);
+    this.setItem(this.K_ORDERS, INITIAL_ORDERS);
+    this.setItem(this.K_INVOICES, []);
+    this.setItem(this.K_MOVEMENTS, []);
+    this.setItem(this.K_PURCHASE_ORDERS, []);
+    this.setItem(this.K_GRNS, []);
+    this.setItem(this.K_ACCOUNTS, INITIAL_ACCOUNTS);
+    this.setItem(this.K_JOURNALS, []);
+    this.setItem(this.K_BANK_ACCOUNTS, INITIAL_BANK_ACCOUNTS);
+    this.setItem(this.K_BANK_STATEMENTS, []);
+    this.setItem(this.K_COLLECTIONS, []);
+    this.setItem(this.K_EXPENSES, []);
+    this.setItem(this.K_NOTIFICATIONS, []);
+    this.setItem(this.K_AUDIT_LOGS, []);
+    localStorage.setItem(this.K_STORAGE_VERSION, this.CURRENT_STORAGE_VERSION);
+
+    if (actor) {
+      this.logAudit(actor, 'RESET_CLEAN_STATE', 'BUSINESS', 'biz_default', 'System Storage', 'Purged all demo records and restored clean state');
+    }
+    this.notify('*');
+  }
+
   private initializeDefaults() {
+    const currentVersion = localStorage.getItem(this.K_STORAGE_VERSION);
+    if (currentVersion !== this.CURRENT_STORAGE_VERSION) {
+      // Automatic migration to clean setup: purge legacy demo data
+      this.resetToCleanState();
+      return;
+    }
+
     if (!localStorage.getItem(this.K_SETTINGS)) {
       this.setItem(this.K_SETTINGS, INITIAL_BUSINESS_SETTINGS);
     }
@@ -128,135 +169,6 @@ class EnterpriseDataService {
     if (!localStorage.getItem(this.K_BANK_ACCOUNTS)) {
       this.setItem(this.K_BANK_ACCOUNTS, INITIAL_BANK_ACCOUNTS);
     }
-    if (!localStorage.getItem(this.K_INVOICES)) {
-      // Seed initial invoices from initial orders
-      const invoices: SalesInvoice[] = INITIAL_ORDERS.map((ord, idx) => ({
-        id: `inv_100${idx + 1}`,
-        invoiceNumber: ord.invoiceNumber || `K7/INV/26-27/009${idx + 1}`,
-        orderId: ord.id,
-        orderNumber: ord.orderNumber,
-        invoiceDate: ord.orderDate.split('T')[0],
-        dueDate: '2026-03-10',
-        retailerId: ord.retailerId,
-        retailerShopName: ord.retailerShopName,
-        billingAddress: ord.deliveryAddress,
-        items: ord.items,
-        taxableAmount: ord.taxableSubtotal,
-        cgstAmount: ord.totalGst / 2,
-        sgstAmount: ord.totalGst / 2,
-        totalGst: ord.totalGst,
-        roundOff: ord.roundOff,
-        totalInvoiceAmount: ord.grandTotal,
-        amountPaid: ord.paidAmount,
-        amountDue: ord.dueAmount,
-        paymentStatus: ord.paymentStatus,
-        isPostedToLedger: true,
-        createdAt: ord.orderDate
-      }));
-      this.setItem(this.K_INVOICES, invoices);
-    }
-    if (!localStorage.getItem(this.K_JOURNALS)) {
-      // Seed initial balanced double-entry vouchers
-      const initialJournals: JournalEntry[] = [
-        {
-          id: 'jrnl_open_01',
-          voucherNumber: 'VR-OPEN-001',
-          voucherType: 'JOURNAL_VOUCHER',
-          date: '2026-01-01',
-          totalDebit: 668920,
-          totalCredit: 668920,
-          isBalanced: true,
-          narration: 'Opening Financial Balances for Financial Year 2026-27',
-          isPosted: true,
-          isReversed: false,
-          createdByUserId: 'usr_admin_01',
-          createdByUserName: 'Kesavan K. (Proprietor)',
-          createdAt: '2026-01-01T00:00:00Z',
-          lines: [
-            { id: 'l1', accountId: 'acc_cash_01', accountName: 'Cash in Hand', accountCode: '1010', debit: 42500, credit: 0 },
-            { id: 'l2', accountId: 'acc_cash_petty', accountName: 'Petty Cash', accountCode: '1015', debit: 5000, credit: 0 },
-            { id: 'l3', accountId: 'acc_bank_tmb', accountName: 'TMB Bank A/c', accountCode: '1020', debit: 312500, credit: 0 },
-            { id: 'l4', accountId: 'acc_bank_sbi', accountName: 'SBI Bank A/c', accountCode: '1025', debit: 145000, credit: 0 },
-            { id: 'l5', accountId: 'acc_sundry_debtors', accountName: 'Sundry Debtors', accountCode: '1030', debit: 51550, credit: 0 },
-            { id: 'l6', accountId: 'acc_stock_asset', accountName: 'Stock-in-Hand', accountCode: '1040', debit: 108420, credit: 0 },
-            { id: 'l7', accountId: 'acc_input_gst', accountName: 'Input Tax Credit', accountCode: '1050', debit: 9800, credit: 0 },
-            { id: 'l8', accountId: 'acc_sundry_creditors', accountName: 'Sundry Creditors (Aachi C&F)', accountCode: '2010', debit: 0, credit: 277400 },
-            { id: 'l9', accountId: 'acc_output_gst', accountName: 'Output GST Payable', accountCode: '2020', debit: 0, credit: 14600 },
-            { id: 'l10', accountId: 'acc_proprietor_capital', accountName: "Proprietor's Capital", accountCode: '3010', debit: 0, credit: 350000 },
-            { id: 'l11', accountId: 'acc_retained_earnings', accountName: 'Retained Earnings', accountCode: '3020', debit: 0, credit: 32770 }
-          ]
-        }
-      ];
-      this.setItem(this.K_JOURNALS, initialJournals);
-    }
-    if (!localStorage.getItem(this.K_MOVEMENTS)) {
-      const initialMovements: InventoryMovement[] = [
-        {
-          id: 'mov_001',
-          productId: 'prod_001',
-          productName: 'Aachi Chilli Powder 100g',
-          sku: 'AACHI-CHL-100G',
-          batchNumber: 'B-CHL-2601',
-          movementType: 'PURCHASE_RECEIPT',
-          quantityChange: 450,
-          previousStock: 0,
-          newStock: 450,
-          unitCost: 36.50,
-          totalCost: 16425,
-          referenceType: 'GOODS_RECEIPT',
-          referenceId: 'grn_init_01',
-          referenceNumber: 'GRN-2026-001',
-          performedByUserId: 'usr_ops_01',
-          performedByUserName: 'Senthil Nathan',
-          timestamp: '2026-01-10T10:00:00Z',
-          notes: 'Initial inward from Madurai C&F Depot'
-        },
-        {
-          id: 'mov_002',
-          productId: 'prod_004',
-          productName: 'Aachi Chicken Masala 100g',
-          sku: 'AACHI-CHK-100G',
-          batchNumber: 'B-CHK-2601',
-          movementType: 'PURCHASE_RECEIPT',
-          quantityChange: 550,
-          previousStock: 0,
-          newStock: 550,
-          unitCost: 41.00,
-          totalCost: 22550,
-          referenceType: 'GOODS_RECEIPT',
-          referenceId: 'grn_init_01',
-          referenceNumber: 'GRN-2026-001',
-          performedByUserId: 'usr_ops_01',
-          performedByUserName: 'Senthil Nathan',
-          timestamp: '2026-01-10T10:00:00Z',
-          notes: 'Initial inward from Madurai C&F Depot'
-        }
-      ];
-      this.setItem(this.K_MOVEMENTS, initialMovements);
-    }
-    if (!localStorage.getItem(this.K_NOTIFICATIONS)) {
-      const initialNotes: AppNotification[] = [
-        {
-          id: 'note_01',
-          type: 'ORDER_NEW',
-          title: 'New Order Received',
-          message: 'Order #K7-SO-2026-0081 received from Selvam Super Store (₹3,360)',
-          timestamp: new Date().toISOString(),
-          isRead: false,
-          linkToTab: 'orders'
-        },
-        {
-          id: 'note_02',
-          type: 'LOW_STOCK_ALERT',
-          title: 'Reorder Level Alert',
-          message: 'Aachi Lime Pickle 300g is approaching reorder threshold (130 left)',
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-          isRead: false,
-          linkToTab: 'inventory'
-        }
-      ];
-      this.setItem(this.K_NOTIFICATIONS, initialNotes);
-    }
   }
 
   // --- BUSINESS SETTINGS ---
@@ -268,7 +180,7 @@ class EnterpriseDataService {
     const current = this.getSettings();
     const updated = { ...current, ...settings };
     this.setItem(this.K_SETTINGS, updated);
-    this.logAudit(actor, 'UPDATE_SETTINGS', 'BUSINESS', 'biz_k7_thoothukudi', 'Business Settings', 'Updated company profile and settings');
+    this.logAudit(actor, 'UPDATE_SETTINGS', 'BUSINESS', current.id || 'biz_default', 'Business Settings', 'Updated company profile and settings');
     return updated;
   }
 
@@ -933,6 +845,114 @@ class EnterpriseDataService {
     return { success: true, entry: journalEntry };
   }
 
+  /**
+   * Set and post opening balances for financial year.
+   * Requires strict debits == credits reconciliation check.
+   */
+  public setOpeningBalances(
+    balances: { accountId: string; debit: number; credit: number }[],
+    asOfDate: string,
+    financialYear: string,
+    actor: UserProfile
+  ): { success: boolean; message?: string } {
+    let totalDebit = 0;
+    let totalCredit = 0;
+    const accounts = this.getAccounts();
+
+    balances.forEach(b => {
+      totalDebit += Math.round(Number(b.debit || 0) * 100) / 100;
+      totalCredit += Math.round(Number(b.credit || 0) * 100) / 100;
+    });
+
+    totalDebit = Math.round(totalDebit * 100) / 100;
+    totalCredit = Math.round(totalCredit * 100) / 100;
+
+    if (Math.abs(totalDebit - totalCredit) > 0.01) {
+      return {
+        success: false,
+        message: `Opening Balances are unbalanced. Total Debits (₹${totalDebit.toFixed(2)}) must equal Total Credits (₹${totalCredit.toFixed(2)}). Reconciliation difference: ₹${Math.abs(totalDebit - totalCredit).toFixed(2)}`
+      };
+    }
+
+    // Update account opening and current balances
+    for (const b of balances) {
+      const idx = accounts.findIndex(a => a.id === b.accountId);
+      if (idx >= 0) {
+        const acc = accounts[idx];
+        const isDr = (b.debit || 0) > 0;
+        const bal = isDr ? Number(b.debit) : Number(b.credit || 0);
+        acc.openingBalance = bal;
+        acc.openingBalanceType = isDr ? 'DR' : 'CR';
+
+        if (acc.type === 'ASSET' || acc.type === 'EXPENSE') {
+          acc.currentBalance = (b.debit || 0) - (b.credit || 0);
+          acc.currentBalanceType = acc.currentBalance >= 0 ? 'DR' : 'CR';
+        } else {
+          acc.currentBalance = (b.credit || 0) - (b.debit || 0);
+          acc.currentBalanceType = acc.currentBalance >= 0 ? 'CR' : 'DR';
+        }
+      }
+    }
+
+    // Replay post-opening journal entries
+    const existingJournals = this.getJournalEntries().filter(j => j.voucherNumber !== 'VR-OPEN-001');
+    for (const j of existingJournals) {
+      for (const l of j.lines) {
+        const aIdx = accounts.findIndex(a => a.id === l.accountId);
+        if (aIdx >= 0) {
+          const acc = accounts[aIdx];
+          if (acc.type === 'ASSET' || acc.type === 'EXPENSE') {
+            acc.currentBalance += (l.debit - l.credit);
+          } else {
+            acc.currentBalance += (l.credit - l.debit);
+          }
+        }
+      }
+    }
+
+    this.setItem(this.K_ACCOUNTS, accounts);
+
+    // Create or update VR-OPEN-001
+    const openingLines = balances
+      .filter(b => (b.debit || 0) > 0 || (b.credit || 0) > 0)
+      .map((b, i) => {
+        const acc = accounts.find(a => a.id === b.accountId);
+        return {
+          id: `line_open_${i + 1}`,
+          accountId: b.accountId,
+          accountName: acc?.name || 'Account',
+          accountCode: acc?.code || '0000',
+          debit: Math.round(Number(b.debit || 0) * 100) / 100,
+          credit: Math.round(Number(b.credit || 0) * 100) / 100
+        };
+      });
+
+    if (openingLines.length > 0) {
+      const openJournal: JournalEntry = {
+        id: 'jrnl_open_01',
+        voucherNumber: 'VR-OPEN-001',
+        voucherType: 'JOURNAL_VOUCHER',
+        date: asOfDate,
+        totalDebit,
+        totalCredit,
+        isBalanced: true,
+        narration: `Opening Financial Balances for Financial Year ${financialYear}`,
+        lines: openingLines,
+        isPosted: true,
+        isReversed: false,
+        createdByUserId: actor.id,
+        createdByUserName: actor.name,
+        createdAt: new Date().toISOString()
+      };
+      this.setItem(this.K_JOURNALS, [openJournal, ...existingJournals]);
+    } else {
+      this.setItem(this.K_JOURNALS, existingJournals);
+    }
+
+    this.logAudit(actor, 'UPDATE_OPENING_BALANCES', 'ACCOUNTING', 'VR-OPEN-001', 'Opening Balances', `Posted opening balance voucher for FY ${financialYear}. Total: ₹${totalDebit}`);
+    return { success: true };
+  }
+
   private postSalesVoucherForOrder(order: SalesOrder, actor: UserProfile) {
     // Dr. Sundry Debtors (Total Invoice Amount)
     // Cr. Sales Revenue (Taxable Amount)
@@ -955,7 +975,7 @@ class EnterpriseDataService {
           accountId: 'acc_sales_revenue',
           debit: 0,
           credit: order.taxableSubtotal,
-          narration: `Aachi sales revenue`
+          narration: `Wholesale sales revenue`
         },
         {
           accountId: 'acc_output_gst',
@@ -1151,33 +1171,38 @@ class EnterpriseDataService {
     const accounts = this.getAccounts();
     const pnl = this.getProfitAndLoss('2026-04-01', asOfDate);
 
+    const sumGroup = (subGroup: string) => {
+      return accounts
+        .filter(a => a.subGroup === subGroup)
+        .reduce((sum, a) => sum + (a.currentBalance || 0), 0);
+    };
+
     const getBal = (id: string) => {
       const acc = accounts.find(a => a.id === id);
       return acc?.currentBalance || 0;
     };
 
-    const cashInHand = getBal('acc_cash_01') + getBal('acc_cash_petty');
-    const bankBalances = getBal('acc_bank_tmb') + getBal('acc_bank_sbi');
-    const accountsReceivable = getBal('acc_sundry_debtors');
-    const inventoryValuation = getBal('acc_stock_asset') + getBal('acc_purchases');
+    const cashInHand = sumGroup('CASH_IN_HAND');
+    const bankBalances = sumGroup('BANK_ACCOUNTS');
+    const accountsReceivable = sumGroup('SUNDRY_DEBTORS');
+    const inventoryValuation = sumGroup('INVENTORY_STOCK');
     
-    // Duties & Taxes net position: if input > output it's an ITC Asset; if output > input it's a Liability
-    const netTax = getBal('acc_output_gst') - getBal('acc_input_gst');
-    const itcAsset = netTax < 0 ? -netTax : 0;
-    const taxLiability = netTax > 0 ? netTax : 0;
+    // Duties & Taxes net position:
+    const itcAsset = Math.max(0, getBal('acc_input_gst'));
+    const taxLiability = Math.max(0, getBal('acc_output_gst'));
 
-    const totalCurrentAssets = cashInHand + bankBalances + accountsReceivable + inventoryValuation + itcAsset;
+    const totalCurrentAssets = Math.round((cashInHand + bankBalances + accountsReceivable + inventoryValuation + itcAsset) * 100) / 100;
 
-    const accountsPayable = getBal('acc_sundry_creditors');
-    const totalCurrentLiabilities = accountsPayable + taxLiability;
+    const accountsPayable = sumGroup('SUNDRY_CREDITORS');
+    const totalCurrentLiabilities = Math.round((accountsPayable + taxLiability) * 100) / 100;
 
-    const ownerCapital = getBal('acc_proprietor_capital');
-    const retainedEarnings = getBal('acc_retained_earnings');
+    const ownerCapital = sumGroup('CAPITAL_ACCOUNT');
+    const retainedEarnings = sumGroup('RETAINED_EARNINGS');
     const currentPeriodProfit = pnl.netProfit;
-    const totalEquity = ownerCapital + retainedEarnings + currentPeriodProfit;
+    const totalEquity = Math.round((ownerCapital + retainedEarnings + currentPeriodProfit) * 100) / 100;
 
     const totalAssets = totalCurrentAssets;
-    const totalLiabilitiesAndEquity = totalCurrentLiabilities + totalEquity;
+    const totalLiabilitiesAndEquity = Math.round((totalCurrentLiabilities + totalEquity) * 100) / 100;
 
     return {
       asOfDate: asOfDate || new Date().toISOString().split('T')[0],
@@ -1213,6 +1238,82 @@ class EnterpriseDataService {
   // --- BANK RECONCILIATION ---
   public getBankAccounts(): BankAccount[] {
     return this.getItem(this.K_BANK_ACCOUNTS, INITIAL_BANK_ACCOUNTS);
+  }
+
+  public addBankAccount(
+    bankData: {
+      bankName: string;
+      accountName: string;
+      accountNumber: string;
+      ifscCode: string;
+      branch: string;
+      accountType: 'CURRENT' | 'SAVINGS' | 'OVERDRAFT';
+      openingBalance: number;
+      upiId?: string;
+    },
+    actor: UserProfile
+  ): BankAccount {
+    const bankAccounts = this.getBankAccounts();
+    const accounts = this.getAccounts();
+    const bankId = `bank_${Date.now()}`;
+    const glAccountId = `acc_bank_${Date.now()}`;
+
+    // 1. Create Ledger Account in COA under BANK_ACCOUNTS
+    const newAccount: Account = {
+      id: glAccountId,
+      code: `102${bankAccounts.length + 1}`,
+      name: `${bankData.bankName} (${bankData.accountNumber.slice(-4)})`,
+      type: 'ASSET',
+      subGroup: 'BANK_ACCOUNTS',
+      openingBalance: bankData.openingBalance || 0,
+      openingBalanceType: 'DR',
+      currentBalance: bankData.openingBalance || 0,
+      currentBalanceType: 'DR',
+      isSystem: false,
+      isActive: true
+    };
+    accounts.push(newAccount);
+    this.setItem(this.K_ACCOUNTS, accounts);
+
+    // 2. Create BankAccount Record
+    const newBank: BankAccount = {
+      id: bankId,
+      bankName: bankData.bankName,
+      accountName: bankData.accountName,
+      accountNumber: bankData.accountNumber,
+      ifscCode: bankData.ifscCode,
+      branch: bankData.branch,
+      accountType: bankData.accountType,
+      openingBalance: bankData.openingBalance || 0,
+      currentBookBalance: bankData.openingBalance || 0,
+      currentBalance: bankData.openingBalance || 0,
+      upiId: bankData.upiId || '',
+      glAccountId,
+      isActive: true
+    };
+    bankAccounts.push(newBank);
+    this.setItem(this.K_BANK_ACCOUNTS, bankAccounts);
+
+    this.logAudit(actor, 'ADD_BANK_ACCOUNT', 'BANK_REC', newBank.id, newBank.bankName, `Acc: ${newBank.accountNumber}`);
+    return newBank;
+  }
+
+  public deleteBankAccount(bankId: string, actor: UserProfile) {
+    let bankAccounts = this.getBankAccounts();
+    const target = bankAccounts.find(b => b.id === bankId);
+    if (!target) return;
+
+    bankAccounts = bankAccounts.filter(b => b.id !== bankId);
+    this.setItem(this.K_BANK_ACCOUNTS, bankAccounts);
+
+    const accounts = this.getAccounts();
+    const accIdx = accounts.findIndex(a => a.id === target.glAccountId);
+    if (accIdx >= 0) {
+      accounts[accIdx].isActive = false;
+      this.setItem(this.K_ACCOUNTS, accounts);
+    }
+
+    this.logAudit(actor, 'DELETE_BANK_ACCOUNT', 'BANK_REC', bankId, target.bankName, `Removed bank account`);
   }
 
   public getBankStatements(): BankStatement[] {
@@ -1545,8 +1646,8 @@ class EnterpriseDataService {
 
       // Match against GRN if linked
       const grn = grns.find(g => g.id === j.referenceId || g.grnNumber === j.referenceNumber);
-      const supplierName = grn?.supplierName || (j.narration.includes('from ') ? j.narration.split('from ')[1].split(' (')[0] : 'Aachi Spices Chennai C&F Depot');
-      const supplierInvoiceNumber = grn?.supplierInvoiceNumber || j.referenceNumber || 'ACH-DEPOT-INV';
+      const supplierName = grn?.supplierName || (j.narration.includes('from ') ? j.narration.split('from ')[1].split(' (')[0] : 'Supplier');
+      const supplierInvoiceNumber = grn?.supplierInvoiceNumber || j.referenceNumber || 'PUR-INV';
 
       totalTaxable += taxable;
       totalGst += gst;
@@ -1557,7 +1658,7 @@ class EnterpriseDataService {
         date: j.date,
         voucherNumber: j.voucherNumber,
         voucherType: j.voucherType,
-        supplierId: grn?.supplierId || 'sup_aachi_chennai',
+        supplierId: grn?.supplierId || 'sup_general',
         supplierName,
         supplierInvoiceNumber,
         taxableAmount: taxable,
@@ -1591,7 +1692,7 @@ class EnterpriseDataService {
     const grns = this.getGoodsReceiptNotes();
 
     const supplierSummaries: SupplierCreditorSummary[] = suppliers.map(sup => {
-      const openingBalance = sup.openingBalance || (sup.id === 'sup_001' ? 185400 : sup.id === 'sup_002' ? 92000 : 0);
+      const openingBalance = sup.openingBalance || 0;
       let creditPurchases = 0;
       let paymentsMade = 0;
       let adjustments = 0;
@@ -1606,7 +1707,7 @@ class EnterpriseDataService {
             const matchesSupplier =
               l.subEntityId === sup.id ||
               j.narration.toLowerCase().includes(sup.name.toLowerCase()) ||
-              (sup.id === 'sup_001' && !l.subEntityId); // Default to primary depot
+              (sup.id === suppliers[0]?.id && !l.subEntityId);
 
             if (matchesSupplier) {
               if (l.credit > 0) {
@@ -1625,7 +1726,7 @@ class EnterpriseDataService {
       return {
         supplierId: sup.id,
         supplierName: sup.name,
-        supplierCode: sup.supplierCode || (sup.id === 'sup_001' ? 'ACH-MDU-DEPOT' : 'ACH-CHN-HQ'),
+        supplierCode: sup.supplierCode || sup.id,
         gstin: sup.gstin,
         openingBalance,
         creditPurchases,
@@ -1650,17 +1751,36 @@ class EnterpriseDataService {
   } {
     const suppliers = this.getSuppliers();
     const sup = suppliers.find(s => s.id === supplierId) || suppliers[0];
+
+    if (!sup) {
+      return {
+        supplier: undefined,
+        summary: {
+          supplierId: supplierId || 'sup_none',
+          supplierName: 'No Supplier Configured',
+          supplierCode: '-',
+          gstin: '-',
+          openingBalance: 0,
+          creditPurchases: 0,
+          paymentsMade: 0,
+          adjustments: 0,
+          closingBalance: 0
+        },
+        transactions: []
+      };
+    }
+
     const journals = this.getJournalEntries();
     const grns = this.getGoodsReceiptNotes();
 
     const transactions: SupplierLedgerTransaction[] = [];
-    const openingBalance = sup.openingBalance || (sup.id === 'sup_001' ? 185400 : sup.id === 'sup_002' ? 92000 : 0);
+    const openingBalance = sup.openingBalance || 0;
     let runningBalance = openingBalance;
 
     if (openingBalance > 0) {
       transactions.push({
         id: `open_${sup.id}`,
-        date: '2026-01-01',
+        date: this.getSettings().financialYearStartDate || '2026-04-01',
         voucherNumber: 'VR-OPEN-001',
         voucherType: 'JOURNAL_VOUCHER',
         supplierInvoiceNumber: 'OPENING',
@@ -1684,7 +1804,7 @@ class EnterpriseDataService {
           const matches =
             l.subEntityId === sup.id ||
             j.narration.toLowerCase().includes(sup.name.toLowerCase()) ||
-            (sup.id === 'sup_001' && !l.subEntityId);
+            (sup.id === suppliers[0]?.id && !l.subEntityId);
 
           if (matches) {
             if (l.credit > 0) {

@@ -71,16 +71,16 @@ export function downloadInvoicePDF(order: SalesOrder, settings: BusinessSettings
   doc.setTextColor(183, 28, 44);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
-  doc.text('K7 ENTERPRISE', 14, 20);
+  doc.text((settings.businessName || 'K7 ENTERPRISE').toUpperCase(), 14, 20);
 
   doc.setTextColor(60, 60, 60);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
-  doc.text('Aachi Masala Authorized Distributor — Thoothukudi District', 14, 26);
+  doc.text(settings.subTitle || settings.distributorName || 'Authorized FMCG Distribution', 14, 26);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.text(`${settings.address}, ${settings.city} - ${settings.pincode}, Tamil Nadu`, 14, 31);
+  doc.text(`${settings.address}, ${settings.city} - ${settings.pincode}, ${settings.state || 'Tamil Nadu'}`, 14, 31);
   doc.text(`GSTIN: ${settings.gstin}  |  FSSAI: ${settings.fssaiNumber}  |  PAN: ${settings.panNumber}`, 14, 35);
   doc.text(`Phone: ${settings.phone}  |  Email: ${settings.email}`, 14, 39);
 
@@ -178,7 +178,7 @@ export function downloadInvoicePDF(order: SalesOrder, settings: BusinessSettings
     startY: 79,
     head: [[
       '#',
-      'Description of Aachi Masala Products',
+      'Description of Goods / Products',
       'HSN',
       'Qty',
       'Rate (₹)',
@@ -245,7 +245,7 @@ export function downloadInvoicePDF(order: SalesOrder, settings: BusinessSettings
 
   doc.setFontSize(7);
   doc.setTextColor(120, 120, 120);
-  doc.text('Declaration: Rates charged are as per Aachi distributor authorized wholesale list.', 18, finalY + 32);
+  doc.text('Declaration: Rates charged are as per authorized wholesale list. Goods once sold cannot be returned.', 18, finalY + 32);
 
   // Summary Table (Right)
   doc.roundedRect(128, finalY, 68, 36, 1, 1, 'D');

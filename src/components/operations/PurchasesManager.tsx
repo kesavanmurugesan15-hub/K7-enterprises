@@ -85,7 +85,7 @@ export const PurchasesManager: React.FC = () => {
 
       return {
         productId: item.productId,
-        productName: prod?.name || 'Aachi Product',
+        productName: prod?.name || 'Product',
         sku: prod?.sku || 'SKU',
         packSize: prod?.packSize || '100g',
         orderedQuantity: item.quantity,
@@ -142,7 +142,7 @@ export const PurchasesManager: React.FC = () => {
 
       return {
         productId: item.productId,
-        productName: prod?.name || 'Aachi Product',
+        productName: prod?.name || 'Product',
         sku: prod?.sku || 'SKU',
         packSize: prod?.packSize || '100g',
         receivedQuantity: item.quantity,
@@ -186,7 +186,7 @@ export const PurchasesManager: React.FC = () => {
         <div>
           <h2 className="text-lg font-bold text-ink-primary">Purchases & Goods Receipt Note (GRN)</h2>
           <p className="text-xs text-ink-secondary mt-0.5">
-            Procure stock from Aachi C&F depots, post verified inward receipts, register FEFO batches, and post balanced double-entry vouchers.
+            Procure stock from suppliers, record verified inward goods receipts, register FEFO batches, and post balanced double-entry vouchers.
           </p>
         </div>
 
@@ -237,7 +237,7 @@ export const PurchasesManager: React.FC = () => {
             activeTab === 'suppliers' ? 'bg-brand text-white shadow-sm' : 'bg-surface text-ink-secondary hover:bg-slate-100'
           }`}
         >
-          Aachi C&F Suppliers ({suppliers.length})
+          Registered Suppliers ({suppliers.length})
         </button>
       </div>
 
@@ -263,7 +263,7 @@ export const PurchasesManager: React.FC = () => {
                 {grns.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="py-8 text-center text-ink-muted">
-                      No Goods Receipts posted yet. Click "Post Inward Goods Receipt" to receive inventory from Aachi Depot.
+                      No Goods Receipts posted yet. Click "Post Inward Goods Receipt" to receive inventory from registered suppliers.
                     </td>
                   </tr>
                 ) : (
@@ -590,7 +590,7 @@ export const PurchasesManager: React.FC = () => {
         isOpen={isPoModalOpen}
         onClose={() => setIsPoModalOpen(false)}
         title="Create Purchase Order"
-        subtitle="Issue purchase order to Aachi Spices & Foods depot"
+        subtitle="Issue purchase order to registered supplier"
       >
         <form onSubmit={handleCreatePo} className="space-y-4 text-xs">
           <div>

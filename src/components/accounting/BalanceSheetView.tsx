@@ -80,11 +80,11 @@ export const BalanceSheetView: React.FC = () => {
       [`As of: ${report.asOfDate}`],
       ['Classification', 'Ledger Head', 'Amount (INR)'],
       ['Asset', 'Cash in Hand (Counter & Petty)', report.assets.currentAssets.cashInHand.toString()],
-      ['Asset', 'Bank Balances (TMB & SBI Current)', report.assets.currentAssets.bankBalances.toString()],
+      ['Asset', 'Bank Balances (Current Accounts)', report.assets.currentAssets.bankBalances.toString()],
       ['Asset', 'Sundry Debtors (Retailer Receivables)', report.assets.currentAssets.accountsReceivable.toString()],
       ['Asset', 'Stock-in-Hand (Inventory Asset)', report.assets.currentAssets.inventoryValuation.toString()],
       ['Total Assets', '', report.assets.totalAssets.toString()],
-      ['Liability', 'Sundry Creditors (Aachi Depot Payables)', report.liabilitiesAndEquity.currentLiabilities.accountsPayable.toString()],
+      ['Liability', 'Sundry Creditors (Supplier Payables)', report.liabilitiesAndEquity.currentLiabilities.accountsPayable.toString()],
       ['Liability', 'Duties & Taxes (Net GST Output)', report.liabilitiesAndEquity.currentLiabilities.taxLiabilities.toString()],
       ['Equity', "Proprietor's Capital", report.liabilitiesAndEquity.capitalAndReserves.ownerCapital.toString()],
       ['Equity', 'Retained Earnings', report.liabilitiesAndEquity.capitalAndReserves.retainedEarnings.toString()],
@@ -277,7 +277,7 @@ export const BalanceSheetView: React.FC = () => {
               >
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-ink-primary group-hover:text-brand transition-colors">
-                    Sundry Creditors (Aachi C&F Depot)
+                    Sundry Creditors (Supplier Payables)
                   </span>
                   <Badge variant="info">Click to Drill Down</Badge>
                 </div>

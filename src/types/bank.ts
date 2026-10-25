@@ -1,12 +1,15 @@
 export interface BankAccount {
   id: string;
-  bankName: string; // e.g. "Tamilnad Mercantile Bank (TMB)"
-  branch: string; // "Beach Road Branch, Thoothukudi"
+  bankName: string;
+  accountName?: string;
+  branch: string;
   accountNumber: string;
-  accountType: 'CURRENT' | 'SAVINGS' | 'OD_CC';
+  accountType: 'CURRENT' | 'SAVINGS' | 'OD_CC' | 'OVERDRAFT';
   ifscCode: string;
   openingBalance: number;
   currentBookBalance: number;
+  currentBalance?: number;
+  upiId?: string;
   glAccountId: string; // Linked GL Account
   isActive: boolean;
 }

@@ -14,7 +14,7 @@ interface RetailerCatalogProps {
 
 export const RetailerCatalog: React.FC<RetailerCatalogProps> = ({ onGoToCart }) => {
   const { currentUser, isRetailer } = useAuth();
-  const { cart, addToCart, cartCount, cartGrandTotal } = useBusiness();
+  const { cart, addToCart, cartCount, cartGrandTotal, settings } = useBusiness();
   const [products, setProducts] = useState<Product[]>(dataService.getProducts());
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -64,9 +64,11 @@ export const RetailerCatalog: React.FC<RetailerCatalogProps> = ({ onGoToCart }) 
       {/* Header Banner */}
       <div className="bg-surface p-4 rounded-lg border border-divider shadow-enterprise flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-bold text-ink-primary">Aachi Masala Wholesale Ordering Portal</h2>
+          <h2 className="text-lg font-bold text-ink-primary">
+            {settings.businessName || 'K7 Enterprise'} Wholesale Ordering Portal
+          </h2>
           <p className="text-xs text-ink-secondary mt-0.5">
-            Order authentic Aachi spices, blended masalas and ready pastes at official distributor wholesale rates.
+            {settings.subTitle || 'Order products at official distributor wholesale rates.'}
           </p>
         </div>
 
@@ -106,7 +108,7 @@ export const RetailerCatalog: React.FC<RetailerCatalogProps> = ({ onGoToCart }) 
           <Search className="w-3.5 h-3.5 text-ink-muted absolute left-3 top-2.5" />
           <input
             type="text"
-            placeholder="Search Aachi masala, தமிழ்..."
+            placeholder="Search product, Tamil name, SKU..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="w-full text-xs pl-8 pr-3 py-1.5 bg-surface border border-divider rounded-md focus:outline-none focus:border-brand"
@@ -121,7 +123,7 @@ export const RetailerCatalog: React.FC<RetailerCatalogProps> = ({ onGoToCart }) 
           <h3 className="text-sm font-bold text-ink-primary">No Products Available</h3>
           <p className="text-xs text-ink-secondary mt-1">
             {searchQuery
-              ? `No Aachi masala products matched "${searchQuery}". Try a different keyword.`
+              ? `No products matched "${searchQuery}". Try a different keyword.`
               : 'No products listed in this category.'}
           </p>
         </div>
@@ -149,7 +151,7 @@ export const RetailerCatalog: React.FC<RetailerCatalogProps> = ({ onGoToCart }) 
                   ) : (
                     <div className="flex flex-col items-center justify-center text-ink-muted">
                       <ImageIcon className="w-8 h-8 text-slate-300" />
-                      <span className="text-[10px] mt-1 text-slate-400">Aachi Masala</span>
+                      <span className="text-[10px] mt-1 text-slate-400">{prod.brand || settings.businessName || 'Distributor'}</span>
                     </div>
                   )}
 

@@ -47,8 +47,9 @@ export interface Retailer {
 export interface BusinessSettings {
   id: string;
   businessName: string;
-  distributorName: string; // "K7 Enterprise"
-  subTitle: string; // "Aachi Masala Authorized Distributor"
+  distributorName: string;
+  ownerName?: string;
+  subTitle: string;
   address: string;
   city: string;
   district: string;
@@ -59,6 +60,8 @@ export interface BusinessSettings {
   gstin: string;
   panNumber: string;
   fssaiNumber: string;
+  gstRegistered?: boolean;
+  isConfigured?: boolean;
   bankDetails: {
     accountName: string;
     accountNumber: string;
@@ -70,6 +73,8 @@ export interface BusinessSettings {
   invoicePrefix: string;
   orderPrefix: string;
   financialYear: string;
+  financialYearStartDate?: string;
+  financialYearEndDate?: string;
   requireOrderApprovalThreshold: number;
   enableFEFO: boolean;
   logoUrl?: string;

@@ -45,7 +45,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, activeTab, onNa
     admin: { label: 'Administrator', icon: ShieldCheck, color: 'text-brand' },
     distributor: { label: 'Operations Manager', icon: UserCheck, color: 'text-indigo-600' },
     sales_rep: { label: 'Sales Officer (Field)', icon: Store, color: 'text-emerald-600' },
-    retailer: { label: 'Retailer (Selvam Store)', icon: Store, color: 'text-amber-600' },
+    retailer: { label: 'Retailer (Customer Portal)', icon: Store, color: 'text-amber-600' },
     delivery: { label: 'Delivery Staff (Van)', icon: Truck, color: 'text-sky-600' }
   };
 
@@ -149,9 +149,9 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, activeTab, onNa
         </button>
 
         <div className="flex items-center gap-2 text-xs md:text-sm">
-          <span className="font-semibold text-brand tracking-wide">K7 Enterprise</span>
+          <span className="font-semibold text-brand tracking-wide">{settings.businessName || 'K7 Enterprise'}</span>
           <span className="text-divider font-light">/</span>
-          <span className="text-ink-secondary font-medium">{settings.city} Hub</span>
+          <span className="text-ink-secondary font-medium">{settings.city ? `${settings.city} Hub` : (settings.district || 'Headquarters')}</span>
           <span className="text-divider font-light hidden sm:inline">/</span>
           <span className="text-ink-primary font-semibold hidden sm:inline">{getBreadcrumbTitle(activeTab)}</span>
         </div>
