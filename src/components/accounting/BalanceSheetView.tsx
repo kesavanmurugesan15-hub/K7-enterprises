@@ -21,7 +21,8 @@ import {
   Calendar,
   ArrowLeft,
   BookOpen,
-  Building
+  Building,
+  AlertCircle
 } from 'lucide-react';
 
 export const BalanceSheetView: React.FC = () => {
@@ -131,6 +132,9 @@ export const BalanceSheetView: React.FC = () => {
     }
   };
 
+  const diff = Math.round(Math.abs(report.assets.totalAssets - report.liabilitiesAndEquity.totalLiabilitiesAndEquity) * 100) / 100;
+  const isReconciled = diff < 0.05;
+
   return (
     <div className="space-y-6 max-w-5xl">
       {/* Top Banner */}
@@ -187,11 +191,24 @@ export const BalanceSheetView: React.FC = () => {
       </form>
 
       {/* Balance Verification Banner */}
-      <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-between text-xs text-emerald-900">
+      <div className={`p-4 rounded-lg flex items-center justify-between text-xs border ${
+        isReconciled
+          ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+          : 'bg-rose-50 border-rose-200 text-rose-900'
+      }`}>
         <div className="flex items-center gap-2.5">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+          {isReconciled ? (
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+          ) : (
+            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+          )}
           <div>
-            <span className="font-bold">Balance Sheet Reconciled:</span> Total Assets equal Total Liabilities and Proprietor Capital (Difference: ₹0.00).
+            <span className="font-bold">
+              {isReconciled ? 'Balance Sheet Reconciled:' : 'Balance Sheet Discrepancy Detected:'}
+            </span>{' '}
+            {isReconciled
+              ? `Total Assets equal Total Liabilities and Proprietor Capital (Difference: ${formatINR(diff)}).`
+              : `Total Assets differ from Total Liabilities & Capital by ${formatINR(diff)}.`}
           </div>
         </div>
         <span className="font-mono font-bold">{formatINR(report.assets.totalAssets)}</span>
