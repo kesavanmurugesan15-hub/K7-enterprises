@@ -88,6 +88,8 @@ export interface DayBookRow {
   debit: number;
   credit: number;
   narration: string;
+  subEntityId?: string;
+  subEntityName?: string;
 }
 
 export interface TrialBalanceItem {
@@ -198,6 +200,32 @@ export interface SupplierLedgerTransaction {
   voucherNumber: string;
   voucherType: string;
   supplierInvoiceNumber: string;
+  particulars: string;
+  debit: number;
+  credit: number;
+  runningBalance: number;
+  referenceNumber?: string;
+}
+
+export interface CustomerDebtorSummary {
+  retailerId: string;
+  retailerShopName: string;
+  ownerName: string;
+  phone: string;
+  gstin: string;
+  openingBalance: number;
+  totalInvoiced: number;
+  totalCollected: number;
+  closingBalance: number;
+  creditLimit: number;
+}
+
+export interface CustomerLedgerTransaction {
+  id: string;
+  date: string;
+  voucherNumber: string;
+  voucherType: string;
+  invoiceNumber: string;
   particulars: string;
   debit: number;
   credit: number;

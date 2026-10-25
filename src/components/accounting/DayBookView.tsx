@@ -116,7 +116,16 @@ export const DayBookView: React.FC = () => {
                     <td className="py-2.5 px-4 whitespace-nowrap">
                       <Badge variant="brand">{r.voucherType.replace(/_/g, ' ')}</Badge>
                     </td>
-                    <td className="py-2.5 px-4 font-semibold">{r.accountName}</td>
+                    <td className="py-2.5 px-4 font-semibold">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span>{r.accountName}</span>
+                        {r.subEntityName && !r.accountName.includes(r.subEntityName) && (
+                          <span className="px-1.5 py-0.2 bg-slate-100 text-ink-secondary text-[10px] rounded border border-slate-200 font-medium">
+                            {r.subEntityName}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="py-2.5 px-4 text-right font-mono text-num">
                       {r.debit > 0 ? formatINR(r.debit) : '-'}
                     </td>

@@ -76,6 +76,8 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, activeTab, onNa
       accounting_pnl: 'Profit & Loss Statement',
       accounting_balance_sheet: 'Balance Sheet',
       accounting_ageing: 'Receivables & Payables Ageing',
+      creditors: 'Creditor Management (Suppliers & Bills Payable)',
+      creditor_management: 'Creditor Management (Suppliers & Bills Payable)',
       bank_reconciliation: 'Bank Reconciliation & Statement Import'
     };
     return titles[tab] || 'Overview';

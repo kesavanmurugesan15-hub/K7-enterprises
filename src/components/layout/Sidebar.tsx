@@ -137,6 +137,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <SectionHeader label="Panel B: Operations" />
               {!showAdmin && <NavItem id="operations_dashboard" label="Operations Overview" icon={LayoutDashboard} />}
               <NavItem id="purchases" label="Purchases & GRN" icon={ClipboardList} />
+              <NavItem id="creditors" label="Creditors (Suppliers)" icon={Building2} />
               <NavItem id="inventory" label="Inventory Ledger & FEFO" icon={Package} />
               <NavItem id="orders" label="Sales Orders & Delivery" icon={Truck} />
               <NavItem id="collections" label="Collections & Expenses" icon={DollarSign} />
@@ -165,7 +166,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <NavItem id="accounting_trial_balance" label="Trial Balance" icon={Scale} />
               <NavItem id="accounting_pnl" label="Profit & Loss" icon={TrendingUp} />
               <NavItem id="accounting_balance_sheet" label="Balance Sheet" icon={Building2} />
-              <NavItem id="accounting_ageing" label="Credit & Ageing" icon={Clock} />
+              <NavItem id="accounting_ageing" label="Debtors & Creditors Ageing" icon={Clock} />
+              <NavItem id="creditor_management" label="Creditor Management" icon={Building2} />
               <NavItem id="bank_reconciliation" label="Bank Reconciliation" icon={Landmark} />
             </div>
           )}

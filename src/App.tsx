@@ -28,6 +28,7 @@ import { TrialBalanceView } from './components/accounting/TrialBalanceView';
 import { ProfitLossView } from './components/accounting/ProfitLossView';
 import { BalanceSheetView } from './components/accounting/BalanceSheetView';
 import { CustomerAgeingView } from './components/accounting/CustomerAgeingView';
+import { CreditorManagementView } from './components/accounting/CreditorManagementView';
 import { BankCashBookView } from './components/accounting/BankCashBookView';
 import { BankReconciliationView } from './components/bank/BankReconciliationView';
 import { dataService } from './services/dataService';
@@ -84,6 +85,8 @@ const AppContent: React.FC = () => {
         return <AdminDashboard onNavigate={setActiveTab} />;
       case 'purchases':
         return <PurchasesManager />;
+      case 'creditors':
+        return <CreditorManagementView />;
       case 'inventory':
         return <InventoryLedgerView />;
       case 'orders':
@@ -126,6 +129,8 @@ const AppContent: React.FC = () => {
         return <BalanceSheetView />;
       case 'accounting_ageing':
         return <CustomerAgeingView />;
+      case 'creditor_management':
+        return <CreditorManagementView />;
       case 'bank_reconciliation':
         return <BankReconciliationView />;
 

@@ -36,6 +36,7 @@ export interface Retailer {
   gstin?: string;
   creditLimit: number;
   creditDays: number;
+  openingBalance?: number;
   currentOutstanding: number;
   assignedSalesRepId?: string;
   assignedSalesRepName?: string;

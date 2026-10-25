@@ -23,12 +23,14 @@ import type {
   PurchaseLedgerEntry,
   SupplierCreditorSummary,
   SupplierLedgerTransaction,
+  CustomerDebtorSummary,
+  CustomerLedgerTransaction,
   BankCashBookSummary,
   BankCashBookTransaction,
   GlobalSearchResult
 } from '../types/accounting';
 import type { BankAccount, BankStatement, BankStatementTransaction } from '../types/bank';
-import type { CollectionReceipt, PettyExpense, CustomerCreditProfile } from '../types/credit';
+import type { CollectionReceipt, PettyExpense, CustomerCreditProfile, SupplierCreditorProfile } from '../types/credit';
 import type { AppNotification, AuditLog } from '../types/notification';
 import type { BusinessSettings, Retailer, UserProfile, UserRole } from '../types/auth';
 
@@ -754,7 +756,7 @@ class EnterpriseDataService {
     voucherType: VoucherType;
     date: string;
     narration: string;
-    lines: { accountId: string; debit: number; credit: number; narration?: string }[];
+    lines: { accountId: string; debit: number; credit: number; narration?: string; subEntityId?: string; subEntityName?: string }[];
     actor: UserProfile;
     referenceType?: JournalEntry['referenceType'];
     referenceId?: string;
@@ -763,6 +765,8 @@ class EnterpriseDataService {
     let totalDebit = 0;
     let totalCredit = 0;
     const accounts = this.getAccounts();
+    const retailers = this.getRetailers();
+    const suppliers = this.getSuppliers();
 
     const verifiedLines = entry.lines.map((l, i) => {
       const acc = accounts.find(a => a.id === l.accountId);
@@ -770,14 +774,28 @@ class EnterpriseDataService {
       const cr = Math.round(Number(l.credit || 0) * 100) / 100;
       totalDebit += dr;
       totalCredit += cr;
+
+      let subEntityName = l.subEntityName;
+      if (l.subEntityId && !subEntityName) {
+        const ret = retailers.find(r => r.id === l.subEntityId);
+        const sup = suppliers.find(s => s.id === l.subEntityId);
+        subEntityName = ret?.shopName || sup?.name;
+      }
+
+      const displayName = subEntityName
+        ? `${acc?.name || 'Account'} — ${subEntityName}`
+        : (acc?.name || 'Unknown Account');
+
       return {
         id: `line_${i + 1}`,
         accountId: l.accountId,
-        accountName: acc?.name || 'Unknown Account',
+        accountName: displayName,
         accountCode: acc?.code || '0000',
         debit: dr,
         credit: cr,
-        narration: l.narration
+        narration: l.narration,
+        subEntityId: l.subEntityId,
+        subEntityName
       };
     });
 
@@ -969,7 +987,9 @@ class EnterpriseDataService {
           accountId: 'acc_sundry_debtors',
           debit: order.grandTotal,
           credit: 0,
-          narration: `Due from ${order.retailerShopName}`
+          narration: `Due from ${order.retailerShopName}`,
+          subEntityId: order.retailerId,
+          subEntityName: order.retailerShopName
         },
         {
           accountId: 'acc_sales_revenue',
@@ -1024,7 +1044,9 @@ class EnterpriseDataService {
           accountId: 'acc_sundry_creditors',
           debit: 0,
           credit: grn.grandTotal,
-          narration: `Payable to ${grn.supplierName}`
+          narration: `Payable to ${grn.supplierName}`,
+          subEntityId: grn.supplierId,
+          subEntityName: grn.supplierName
         }
       ],
       actor
@@ -1050,7 +1072,9 @@ class EnterpriseDataService {
           accountName: line.accountName,
           debit: line.debit,
           credit: line.credit,
-          narration: j.narration
+          narration: j.narration,
+          subEntityId: line.subEntityId,
+          subEntityName: line.subEntityName
         });
       }
     }
@@ -1450,7 +1474,9 @@ class EnterpriseDataService {
           accountId: 'acc_sundry_debtors',
           debit: 0,
           credit: data.amount,
-          narration: `Payment from ${data.retailerShopName}`
+          narration: `Payment from ${data.retailerShopName}`,
+          subEntityId: data.retailerId,
+          subEntityName: data.retailerShopName
         }
       ],
       actor
@@ -1562,6 +1588,143 @@ class EnterpriseDataService {
         }
       };
     });
+  }
+
+  public getSupplierCreditorProfiles(): SupplierCreditorProfile[] {
+    const suppliers = this.getSuppliers();
+    const grns = this.getGoodsReceiptNotes();
+    const journals = this.getJournalEntries();
+    const now = Date.now();
+
+    return suppliers.map(sup => {
+      const supGrns = grns.filter(g => g.supplierId === sup.id);
+      const totalPurchased = supGrns.reduce((sum, g) => sum + g.grandTotal, 0);
+
+      let totalPaid = 0;
+      let lastPaymentDate: string | undefined;
+      let lastPaymentAmount: number | undefined;
+
+      for (const j of journals) {
+        if (j.voucherType === 'PAYMENT_VOUCHER') {
+          for (const l of j.lines) {
+            if (l.accountId === 'acc_sundry_creditors' && (l.subEntityId === sup.id || j.narration.toLowerCase().includes(sup.name.toLowerCase()))) {
+              if (l.debit > 0) {
+                totalPaid += l.debit;
+                if (!lastPaymentDate || j.date > lastPaymentDate) {
+                  lastPaymentDate = j.date;
+                  lastPaymentAmount = l.debit;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      const openingBal = sup.openingBalance || 0;
+      const currentPayable = Math.max(0, openingBal + totalPurchased - totalPaid);
+
+      let current_0_30 = 0;
+      let days_31_60 = 0;
+      let days_61_90 = 0;
+      let days_90_plus = 0;
+
+      if (currentPayable > 0) {
+        let remaining = currentPayable;
+        for (const g of supGrns) {
+          if (remaining <= 0) break;
+          const gTime = new Date(g.receivedDate).getTime();
+          const daysDiff = Math.max(0, Math.floor((now - gTime) / 86400000));
+          const chunk = Math.min(remaining, g.grandTotal);
+          remaining -= chunk;
+
+          if (daysDiff <= 30) current_0_30 += chunk;
+          else if (daysDiff <= 60) days_31_60 += chunk;
+          else if (daysDiff <= 90) days_61_90 += chunk;
+          else days_90_plus += chunk;
+        }
+        if (remaining > 0) {
+          days_90_plus += remaining;
+        }
+      }
+
+      return {
+        supplierId: sup.id,
+        supplierName: sup.name,
+        supplierCode: sup.supplierCode || sup.id,
+        contactPerson: sup.contactPerson,
+        phone: sup.phone,
+        city: sup.city,
+        gstin: sup.gstin,
+        paymentTermsDays: sup.paymentTermsDays || 30,
+        totalPurchased: Math.round(totalPurchased * 100) / 100,
+        totalPaid: Math.round(totalPaid * 100) / 100,
+        currentPayable: Math.round(currentPayable * 100) / 100,
+        ageing: {
+          current_0_30: Math.round(current_0_30 * 100) / 100,
+          days_31_60: Math.round(days_31_60 * 100) / 100,
+          days_61_90: Math.round(days_61_90 * 100) / 100,
+          days_90_plus: Math.round(days_90_plus * 100) / 100
+        },
+        lastPaymentDate,
+        lastPaymentAmount
+      };
+    });
+  }
+
+  public recordSupplierPayment(
+    data: {
+      supplierId: string;
+      date: string;
+      amount: number;
+      paymentMethod: 'CASH' | 'UPI' | 'BANK_TRANSFER' | 'CHEQUE';
+      referenceNumber: string;
+      paidFromAccountId: string;
+      notes?: string;
+    },
+    actor: UserProfile
+  ): { success: boolean; voucherNumber?: string; message?: string } {
+    const suppliers = this.getSuppliers();
+    const supIdx = suppliers.findIndex(s => s.id === data.supplierId);
+    if (supIdx < 0) return { success: false, message: 'Supplier not found' };
+
+    const supplier = suppliers[supIdx];
+
+    const voucherResult = this.postJournalEntry({
+      voucherType: 'PAYMENT_VOUCHER',
+      date: data.date,
+      narration: `Payment to ${supplier.name} (Ref: ${data.referenceNumber}) - ${data.paymentMethod}`,
+      referenceType: 'PAYMENT',
+      referenceId: `pay_${Date.now()}`,
+      referenceNumber: data.referenceNumber,
+      lines: [
+        {
+          accountId: 'acc_sundry_creditors',
+          debit: data.amount,
+          credit: 0,
+          narration: `Disbursement to ${supplier.name}`,
+          subEntityId: supplier.id,
+          subEntityName: supplier.name
+        },
+        {
+          accountId: data.paidFromAccountId || 'acc_cash_01',
+          debit: 0,
+          credit: data.amount,
+          narration: `${data.paymentMethod} payment for supplier dues`
+        }
+      ],
+      actor
+    });
+
+    if (!voucherResult.success) {
+      return { success: false, message: voucherResult.message };
+    }
+
+    supplier.currentOutstandingBalance = Math.max(0, (supplier.currentOutstandingBalance || 0) - data.amount);
+    suppliers[supIdx] = supplier;
+    this.setItem(this.K_SUPPLIERS, suppliers);
+
+    this.logAudit(actor, 'RECORD_SUPPLIER_PAYMENT', 'PURCHASE', supplier.id, supplier.name, `Paid ₹${data.amount} via ${data.paymentMethod} (Ref: ${data.referenceNumber})`);
+    return { success: true, voucherNumber: voucherResult.entry?.voucherNumber };
   }
 
   // --- NOTIFICATIONS ---
@@ -1846,6 +2009,116 @@ class EnterpriseDataService {
         paymentsMade,
         adjustments: 0,
         closingBalance: Math.max(0, runningBalance)
+      },
+      transactions
+    };
+  }
+
+  // --- CUSTOMER (DEBTOR) DETAILED LEDGER WITH RUNNING BALANCE ---
+  public getCustomerDetailedLedger(retailerId: string, fromDate?: string, toDate?: string): {
+    retailer?: Retailer;
+    summary: CustomerDebtorSummary;
+    transactions: CustomerLedgerTransaction[];
+  } {
+    const retailers = this.getRetailers();
+    const ret = retailers.find(r => r.id === retailerId) || retailers[0];
+
+    if (!ret) {
+      return {
+        retailer: undefined,
+        summary: {
+          retailerId: retailerId || 'ret_none',
+          retailerShopName: 'No Retailer Configured',
+          ownerName: '-',
+          phone: '-',
+          gstin: '-',
+          openingBalance: 0,
+          totalInvoiced: 0,
+          totalCollected: 0,
+          closingBalance: 0,
+          creditLimit: 0
+        },
+        transactions: []
+      };
+    }
+
+    const journals = this.getJournalEntries();
+    const orders = this.getOrders();
+    const transactions: CustomerLedgerTransaction[] = [];
+    const openingBalance = ret.openingBalance || 0;
+    let runningBalance = openingBalance;
+
+    if (openingBalance > 0) {
+      transactions.push({
+        id: `open_${ret.id}`,
+        date: this.getSettings().financialYearStartDate || '2026-04-01',
+        voucherNumber: 'VR-OPEN-001',
+        voucherType: 'JOURNAL_VOUCHER',
+        invoiceNumber: 'OPENING',
+        particulars: `Opening Balance B/F - ${ret.shopName}`,
+        debit: openingBalance,
+        credit: 0,
+        runningBalance: openingBalance
+      });
+    }
+
+    let totalInvoiced = 0;
+    let totalCollected = 0;
+
+    for (const j of journals) {
+      if (fromDate && j.date < fromDate) continue;
+      if (toDate && j.date > toDate) continue;
+      if (j.voucherNumber === 'VR-OPEN-001') continue;
+
+      for (const l of j.lines) {
+        if (l.accountId === 'acc_sundry_debtors') {
+          const matches =
+            l.subEntityId === ret.id ||
+            j.narration.toLowerCase().includes(ret.shopName.toLowerCase()) ||
+            (l.subEntityName && l.subEntityName.toLowerCase().includes(ret.shopName.toLowerCase())) ||
+            (ret.id === retailers[0]?.id && !l.subEntityId);
+
+          if (matches) {
+            if (l.debit > 0) {
+              totalInvoiced += l.debit;
+              runningBalance += l.debit;
+            }
+            if (l.credit > 0) {
+              totalCollected += l.credit;
+              runningBalance -= l.credit;
+            }
+
+            const order = orders.find(o => o.id === j.referenceId || o.orderNumber === j.referenceNumber || o.invoiceNumber === j.referenceNumber);
+            transactions.push({
+              id: `${j.id}_${l.id}`,
+              date: j.date,
+              voucherNumber: j.voucherNumber,
+              voucherType: j.voucherType,
+              invoiceNumber: order?.invoiceNumber || j.referenceNumber || '-',
+              particulars: l.narration || j.narration,
+              debit: l.debit,
+              credit: l.credit,
+              runningBalance: Math.round(runningBalance * 100) / 100,
+              referenceNumber: j.referenceNumber
+            });
+          }
+        }
+      }
+    }
+
+    return {
+      retailer: ret,
+      summary: {
+        retailerId: ret.id,
+        retailerShopName: ret.shopName,
+        ownerName: ret.ownerName,
+        phone: ret.phone,
+        gstin: ret.gstin || '',
+        openingBalance: ret.openingBalance || 0,
+        totalInvoiced,
+        totalCollected,
+        closingBalance: Math.max(0, runningBalance),
+        creditLimit: ret.creditLimit
       },
       transactions
     };

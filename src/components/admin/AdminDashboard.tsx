@@ -140,7 +140,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
           subtitle="Sundry Creditors (Suppliers)"
           icon={Building}
           accentColor="info"
-          onClick={() => onNavigate('purchases')}
+          onClick={() => onNavigate('creditor_management')}
         />
         <StatCard
           title="Inventory Valuation"

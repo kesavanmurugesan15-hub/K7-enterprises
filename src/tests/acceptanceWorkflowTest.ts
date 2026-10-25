@@ -408,6 +408,44 @@ async function runAcceptanceTests() {
   const archiveResult = dataService.archiveProduct(newProduct.id, adminUser);
   assert(archiveResult.success === true, 'Product archival: Successfully deactivated product without deletion');
 
+  // --- 8. Creditor Management & Debtor/Creditor Sub-Ledgers ---
+  console.log('\n--- 8. Creditor Management & Debtor/Creditor Sub-Ledgers ---');
+  const creditorProfiles = dataService.getSupplierCreditorProfiles();
+  assert(creditorProfiles.length >= 1, 'Creditor Management: Supplier profile registered in creditor profiles');
+  const supProf = creditorProfiles.find(p => p.supplierId === supplier.id)!;
+  assert(supProf.supplierName === supplier.name, `Creditor Name verified: ${supProf.supplierName}`);
+  assert(supProf.currentPayable > 0, `Creditor Payable balance tracked: ₹${supProf.currentPayable}`);
+
+  // Test recording a payment to creditor
+  const paymentAmount = 1000;
+  const paymentResult = dataService.recordSupplierPayment({
+    supplierId: supplier.id,
+    date: '2026-04-15',
+    amount: paymentAmount,
+    paymentMethod: 'UPI',
+    referenceNumber: 'UTR-TEST-9988',
+    paidFromAccountId: bank.glAccountId,
+    notes: 'Test payment settlement'
+  }, adminUser);
+
+  assert(paymentResult.success === true, 'Creditor Management: Supplier payment voucher posted successfully');
+  assert(paymentResult.voucherNumber.startsWith('VR-'), 'Payment voucher number assigned correctly');
+
+  // Verify creditor detailed ledger
+  const supplierLedger = dataService.getSupplierDetailedLedger(supplier.id);
+  assert(supplierLedger.supplier?.name === supplier.name, 'Supplier Ledger: counterparty name matches');
+  assert(supplierLedger.transactions.some(t => t.debit === paymentAmount), `Supplier Ledger: payment entry of ₹${paymentAmount} logged`);
+
+  // Verify customer debtor detailed ledger
+  const customerLedger = dataService.getCustomerDetailedLedger(retailer.id);
+  assert(customerLedger.retailer?.shopName === retailer.shopName, `Debtor Ledger: retailer shop name matches (${retailer.shopName})`);
+  assert(customerLedger.transactions.length >= 1, 'Debtor Ledger: contains transactions with running balance');
+
+  // Verify Day Book includes party name
+  const dayBookRows = dataService.getDayBook('2026-04-01', '2027-03-31');
+  const partyRows = dayBookRows.filter(r => r.subEntityName || r.accountName.includes('—'));
+  assert(partyRows.length > 0, 'Day Book: debtor/creditor party names properly preserved across journal lines');
+
   console.log('\n================================================================');
   console.log(`   TEST RESULTS: ${passedTests} / ${totalTests} WORKFLOW TESTS PASSED (100%) `);
   console.log('================================================================\n');

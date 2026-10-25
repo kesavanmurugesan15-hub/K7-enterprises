@@ -2,24 +2,37 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { dataService } from '../../services/dataService';
 import type { Account, JournalEntry, VoucherType } from '../../types/accounting';
+import type { Retailer } from '../../types/auth';
+import type { Supplier } from '../../types/purchase';
 import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
 import { Badge } from '../common/Badge';
 import { formatINR } from '../../utils/currency';
 import { formatDate, getTodayDateString, formatDateTime } from '../../utils/date';
-import { Plus, Trash2, Scale, CheckCircle2, AlertTriangle, FileSpreadsheet } from 'lucide-react';
+import { Plus, Trash2, Scale, CheckCircle2, AlertTriangle, FileSpreadsheet, Store, Building } from 'lucide-react';
+
+interface VoucherLineInput {
+  accountId: string;
+  debit: number;
+  credit: number;
+  narration?: string;
+  subEntityId?: string;
+  subEntityName?: string;
+}
 
 export const VoucherEntryView: React.FC = () => {
   const { currentUser } = useAuth();
   const [journals, setJournals] = useState<JournalEntry[]>(dataService.getJournalEntries());
   const [accounts, setAccounts] = useState<Account[]>(dataService.getAccounts());
+  const [retailers, setRetailers] = useState<Retailer[]>(dataService.getRetailers());
+  const [suppliers, setSuppliers] = useState<Supplier[]>(dataService.getSuppliers());
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Form State
   const [voucherType, setVoucherType] = useState<VoucherType>('JOURNAL_VOUCHER');
   const [entryDate, setEntryDate] = useState(getTodayDateString());
   const [narration, setNarration] = useState('');
-  const [lines, setLines] = useState<{ accountId: string; debit: number; credit: number; narration?: string }[]>([
+  const [lines, setLines] = useState<VoucherLineInput[]>([
     { accountId: accounts[0]?.id || '', debit: 1000, credit: 0 },
     { accountId: accounts[1]?.id || '', debit: 0, credit: 1000 }
   ]);
@@ -29,6 +42,8 @@ export const VoucherEntryView: React.FC = () => {
     const unsub = dataService.subscribe('*', () => {
       setJournals(dataService.getJournalEntries());
       setAccounts(dataService.getAccounts());
+      setRetailers(dataService.getRetailers());
+      setSuppliers(dataService.getSuppliers());
     });
     return () => unsub();
   }, []);
@@ -134,14 +149,21 @@ export const VoucherEntryView: React.FC = () => {
                   <td className="py-3 px-4 whitespace-nowrap">
                     <Badge variant="brand">{j.voucherType.replace(/_/g, ' ')}</Badge>
                   </td>
-                  <td className="py-3 px-4 min-w-[240px]">
+                  <td className="py-3 px-4 min-w-[260px]">
                     <div className="space-y-1">
                       {j.lines.map((l, idx) => (
-                        <div key={idx} className="flex justify-between text-[11px]">
-                          <span className="font-semibold text-ink-primary">
-                            {l.debit > 0 ? `Dr. ${l.accountName}` : `   To ${l.accountName}`}
-                          </span>
-                          <span className="font-mono text-ink-secondary">
+                        <div key={idx} className="flex items-center justify-between text-[11px] gap-2">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className="font-semibold text-ink-primary">
+                              {l.debit > 0 ? `Dr. ${l.accountName}` : `   To ${l.accountName}`}
+                            </span>
+                            {l.subEntityName && !l.accountName.includes(l.subEntityName) && (
+                              <span className="px-1.5 py-0.5 bg-slate-100 text-ink-secondary text-[10px] rounded border border-slate-200 font-medium">
+                                {l.subEntityName}
+                              </span>
+                            )}
+                          </div>
+                          <span className="font-mono text-ink-secondary shrink-0">
                             {l.debit > 0 ? formatINR(l.debit) : formatINR(l.credit)}
                           </span>
                         </div>
@@ -227,68 +249,133 @@ export const VoucherEntryView: React.FC = () => {
             </div>
 
             {lines.map((line, idx) => (
-              <div key={idx} className="p-2.5 bg-white rounded border border-divider flex flex-col sm:flex-row items-center gap-2">
-                <div className="flex-1 w-full">
-                  <select
-                    value={line.accountId}
-                    onChange={e => {
-                      const updated = [...lines];
-                      updated[idx].accountId = e.target.value;
-                      setLines(updated);
-                    }}
-                    className="w-full p-1.5 border border-divider rounded text-xs bg-white"
+              <div key={idx} className="p-2.5 bg-white rounded border border-divider space-y-2">
+                <div className="flex flex-col sm:flex-row items-center gap-2">
+                  <div className="flex-1 w-full">
+                    <select
+                      value={line.accountId}
+                      onChange={e => {
+                        const updated = [...lines];
+                        const newAccId = e.target.value;
+                        updated[idx].accountId = newAccId;
+                        if (newAccId === 'acc_sundry_debtors') {
+                          updated[idx].subEntityId = retailers[0]?.id;
+                          updated[idx].subEntityName = retailers[0]?.shopName;
+                        } else if (newAccId === 'acc_sundry_creditors') {
+                          updated[idx].subEntityId = suppliers[0]?.id;
+                          updated[idx].subEntityName = suppliers[0]?.name;
+                        } else {
+                          updated[idx].subEntityId = undefined;
+                          updated[idx].subEntityName = undefined;
+                        }
+                        setLines(updated);
+                      }}
+                      className="w-full p-1.5 border border-divider rounded text-xs bg-white font-medium"
+                    >
+                      {accounts.map(acc => (
+                        <option key={acc.id} value={acc.id}>
+                          [{acc.code}] {acc.name} ({acc.type})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="w-full sm:w-28">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="Debit (₹)"
+                      value={line.debit || ''}
+                      onChange={e => {
+                        const updated = [...lines];
+                        const val = Number(e.target.value);
+                        updated[idx].debit = val;
+                        if (val > 0) updated[idx].credit = 0;
+                        setLines(updated);
+                      }}
+                      className="w-full p-1.5 border border-divider rounded text-xs font-mono font-bold"
+                    />
+                  </div>
+
+                  <div className="w-full sm:w-28">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="Credit (₹)"
+                      value={line.credit || ''}
+                      onChange={e => {
+                        const updated = [...lines];
+                        const val = Number(e.target.value);
+                        updated[idx].credit = val;
+                        if (val > 0) updated[idx].debit = 0;
+                        setLines(updated);
+                      }}
+                      className="w-full p-1.5 border border-divider rounded text-xs font-mono font-bold"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveLine(idx)}
+                    className="p-1.5 text-ink-muted hover:text-rose-600 transition-colors"
                   >
-                    {accounts.map(acc => (
-                      <option key={acc.id} value={acc.id}>
-                        [{acc.code}] {acc.name} ({acc.type})
-                      </option>
-                    ))}
-                  </select>
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
 
-                <div className="w-full sm:w-28">
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="Debit (₹)"
-                    value={line.debit || ''}
-                    onChange={e => {
-                      const updated = [...lines];
-                      const val = Number(e.target.value);
-                      updated[idx].debit = val;
-                      if (val > 0) updated[idx].credit = 0;
-                      setLines(updated);
-                    }}
-                    className="w-full p-1.5 border border-divider rounded text-xs font-mono font-bold"
-                  />
-                </div>
+                {/* Sub-party Selector for Sundry Debtors */}
+                {line.accountId === 'acc_sundry_debtors' && (
+                  <div className="flex items-center gap-2 pl-2 bg-blue-50/70 p-1.5 rounded border border-blue-200 text-xs">
+                    <Store className="w-3.5 h-3.5 text-blue-700 shrink-0" />
+                    <span className="font-semibold text-blue-900 shrink-0">Debtor (Retailer):</span>
+                    <select
+                      value={line.subEntityId || (retailers[0]?.id ?? '')}
+                      onChange={e => {
+                        const r = retailers.find(ret => ret.id === e.target.value);
+                        const updated = [...lines];
+                        updated[idx].subEntityId = r?.id;
+                        updated[idx].subEntityName = r?.shopName;
+                        setLines(updated);
+                      }}
+                      className="flex-1 p-1 bg-white border border-blue-300 rounded text-xs font-semibold text-blue-950"
+                    >
+                      {retailers.length === 0 && <option value="">No retailers registered yet</option>}
+                      {retailers.map(r => (
+                        <option key={r.id} value={r.id}>
+                          {r.shopName} — {r.ownerName} ({r.city})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
-                <div className="w-full sm:w-28">
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="Credit (₹)"
-                    value={line.credit || ''}
-                    onChange={e => {
-                      const updated = [...lines];
-                      const val = Number(e.target.value);
-                      updated[idx].credit = val;
-                      if (val > 0) updated[idx].debit = 0;
-                      setLines(updated);
-                    }}
-                    className="w-full p-1.5 border border-divider rounded text-xs font-mono font-bold"
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => handleRemoveLine(idx)}
-                  className="p-1.5 text-ink-muted hover:text-rose-600 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {/* Sub-party Selector for Sundry Creditors */}
+                {line.accountId === 'acc_sundry_creditors' && (
+                  <div className="flex items-center gap-2 pl-2 bg-emerald-50/70 p-1.5 rounded border border-emerald-200 text-xs">
+                    <Building className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                    <span className="font-semibold text-emerald-900 shrink-0">Creditor (Supplier):</span>
+                    <select
+                      value={line.subEntityId || (suppliers[0]?.id ?? '')}
+                      onChange={e => {
+                        const s = suppliers.find(sup => sup.id === e.target.value);
+                        const updated = [...lines];
+                        updated[idx].subEntityId = s?.id;
+                        updated[idx].subEntityName = s?.name;
+                        setLines(updated);
+                      }}
+                      className="flex-1 p-1 bg-white border border-emerald-300 rounded text-xs font-semibold text-emerald-950"
+                    >
+                      {suppliers.length === 0 && <option value="">No suppliers registered yet</option>}
+                      {suppliers.map(s => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} ({s.supplierCode || s.city})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             ))}
 
