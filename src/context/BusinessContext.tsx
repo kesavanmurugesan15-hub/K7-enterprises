@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { BusinessSettings } from '../types/auth';
-import { AppNotification } from '../types/notification';
+import type { BusinessSettings } from '../types/auth';
+import type { AppNotification } from '../types/notification';
 import { dataService } from '../services/dataService';
-import { Product } from '../types/product';
+import type { Product } from '../types/product';
 
 export interface CartItem {
   product: Product;

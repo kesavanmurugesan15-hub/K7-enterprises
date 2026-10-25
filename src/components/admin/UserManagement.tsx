@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { dataService } from '../../services/dataService';
-import { UserProfile, UserRole, Retailer } from '../../types/auth';
+import type { UserProfile, UserRole, Retailer } from '../../types/auth';
 import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
 import { Badge } from '../common/Badge';

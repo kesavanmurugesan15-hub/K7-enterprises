@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useBusiness } from '../../context/BusinessContext';
 import { dataService } from '../../services/dataService';
-import { Product, ProductCategory } from '../../types/product';
+import type { Product, ProductCategory } from '../../types/product';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
 import { formatINR } from '../../utils/currency';

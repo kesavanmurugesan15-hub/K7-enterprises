@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useBusiness } from '../../context/BusinessContext';
 import { Bell, Search, ShieldCheck, Store, Truck, UserCheck, Menu, X, CheckCheck } from 'lucide-react';
-import { UserRole } from '../../types/auth';
+import type { UserRole } from '../../types/auth';
 import { formatDateTime } from '../../utils/date';
 
 interface HeaderProps {

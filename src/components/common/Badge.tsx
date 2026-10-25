@@ -1,6 +1,6 @@
 import React from 'react';
 import clsx from 'clsx';
-import { DeliveryStage, PaymentStatus } from '../../types/order';
+import type { DeliveryStage, PaymentStatus } from '../../types/order';
 
 interface BadgeProps {
   children: React.ReactNode;

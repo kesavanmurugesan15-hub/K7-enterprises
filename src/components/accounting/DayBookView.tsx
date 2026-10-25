@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { dataService } from '../../services/dataService';
-import { DayBookRow } from '../../types/accounting';
+import type { DayBookRow } from '../../types/accounting';
 import { formatINR } from '../../utils/currency';
 import { formatDate, getTodayDateString } from '../../utils/date';
 import { downloadCSV } from '../../utils/export';

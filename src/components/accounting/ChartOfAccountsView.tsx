@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { dataService } from '../../services/dataService';
-import { Account, AccountType } from '../../types/accounting';
+import type { Account, AccountType } from '../../types/accounting';
 import { formatINR } from '../../utils/currency';
 import { BookOpen, Search, ArrowRight, ShieldCheck } from 'lucide-react';
 import { Badge } from '../common/Badge';

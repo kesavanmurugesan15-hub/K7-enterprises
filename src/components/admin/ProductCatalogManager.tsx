@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { dataService } from '../../services/dataService';
-import { Product, ProductCategory, ProductBatch } from '../../types/product';
+import type { Product, ProductCategory, ProductBatch } from '../../types/product';
 import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
 import { Badge } from '../common/Badge';

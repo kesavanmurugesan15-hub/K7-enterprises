@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { dataService } from '../../services/dataService';
-import { Product } from '../../types/product';
-import { InventoryMovement } from '../../types/inventory';
+import type { Product } from '../../types/product';
+import type { InventoryMovement } from '../../types/inventory';
 import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
 import { Badge } from '../common/Badge';

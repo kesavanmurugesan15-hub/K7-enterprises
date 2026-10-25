@@ -8,15 +8,15 @@ import {
   INITIAL_BANK_ACCOUNTS,
   INITIAL_ORDERS
 } from './seedData';
-import { Product, ProductBatch } from '../types/product';
-import { SalesOrder, DeliveryStage, PaymentMethod, PaymentStatus, OrderItem, SalesInvoice } from '../types/order';
-import { InventoryMovement, StockValuationSummary } from '../types/inventory';
-import { PurchaseOrder, GoodsReceiptNote, Supplier } from '../types/purchase';
-import { Account, JournalEntry, VoucherType, DayBookRow, TrialBalanceReport, ProfitLossReport, BalanceSheetReport } from '../types/accounting';
-import { BankAccount, BankStatement, BankStatementTransaction } from '../types/bank';
-import { CollectionReceipt, PettyExpense, CustomerCreditProfile } from '../types/credit';
-import { AppNotification, AuditLog } from '../types/notification';
-import { BusinessSettings, Retailer, UserProfile } from '../types/auth';
+import type { Product, ProductBatch } from '../types/product';
+import type { SalesOrder, DeliveryStage, PaymentMethod, PaymentStatus, OrderItem, SalesInvoice } from '../types/order';
+import type { InventoryMovement, StockValuationSummary } from '../types/inventory';
+import type { PurchaseOrder, GoodsReceiptNote, Supplier } from '../types/purchase';
+import type { Account, JournalEntry, VoucherType, DayBookRow, TrialBalanceReport, ProfitLossReport, BalanceSheetReport } from '../types/accounting';
+import type { BankAccount, BankStatement, BankStatementTransaction } from '../types/bank';
+import type { CollectionReceipt, PettyExpense, CustomerCreditProfile } from '../types/credit';
+import type { AppNotification, AuditLog } from '../types/notification';
+import type { BusinessSettings, Retailer, UserProfile } from '../types/auth';
 
 type Listener = () => void;
 

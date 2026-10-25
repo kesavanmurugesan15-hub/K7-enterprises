@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { dataService } from '../../services/dataService';
-import { Account, JournalEntry, VoucherType } from '../../types/accounting';
+import type { Account, JournalEntry, VoucherType } from '../../types/accounting';
 import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
 import { Badge } from '../common/Badge';

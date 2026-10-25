@@ -1,5 +1,5 @@
 import React from 'react';
-import { DeliveryStage, DeliveryStageHistory } from '../../types/order';
+import type { DeliveryStage, DeliveryStageHistory } from '../../types/order';
 import { Check, Clock, AlertTriangle, XCircle, Truck, Package, ShoppingCart } from 'lucide-react';
 import clsx from 'clsx';
 import { formatDateTime } from '../../utils/date';

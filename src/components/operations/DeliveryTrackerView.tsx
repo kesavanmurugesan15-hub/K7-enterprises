@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useBusiness } from '../../context/BusinessContext';
 import { dataService } from '../../services/dataService';
-import { SalesOrder, DeliveryStage } from '../../types/order';
+import type { SalesOrder, DeliveryStage } from '../../types/order';
 import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
 import { Badge, DeliveryStageBadge, PaymentStatusBadge } from '../common/Badge';

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { dataService } from '../../services/dataService';
-import { AuditLog } from '../../types/notification';
+import type { AuditLog } from '../../types/notification';
 import { formatDateTime } from '../../utils/date';
 import { ShieldCheck, Search, Filter } from 'lucide-react';
 import { Badge } from '../common/Badge';

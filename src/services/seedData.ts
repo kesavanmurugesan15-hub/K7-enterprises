@@ -1,9 +1,9 @@
-import { BusinessSettings, Retailer, UserProfile } from '../types/auth';
-import { Product } from '../types/product';
-import { Supplier } from '../types/purchase';
-import { Account } from '../types/accounting';
-import { BankAccount } from '../types/bank';
-import { SalesOrder } from '../types/order';
+import type { BusinessSettings, Retailer, UserProfile } from '../types/auth';
+import type { Product } from '../types/product';
+import type { Supplier } from '../types/purchase';
+import type { Account } from '../types/accounting';
+import type { BankAccount } from '../types/bank';
+import type { SalesOrder } from '../types/order';
 
 export const INITIAL_BUSINESS_SETTINGS: BusinessSettings = {
   id: 'biz_k7_thoothukudi',

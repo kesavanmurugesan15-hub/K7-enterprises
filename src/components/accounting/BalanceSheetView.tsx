@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { dataService } from '../../services/dataService';
-import { BalanceSheetReport } from '../../types/accounting';
+import type { BalanceSheetReport } from '../../types/accounting';
 import { formatINR } from '../../utils/currency';
 import { formatDate } from '../../utils/date';
 import { downloadCSV, printElementById } from '../../utils/export';
